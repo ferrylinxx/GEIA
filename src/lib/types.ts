@@ -67,6 +67,9 @@ export interface Message {
   edited_at: string | null
   edit_version: number
   active_version_id: string | null
+  model?: string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  meta_json?: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -152,6 +155,15 @@ export interface ChunkSource {
   chunk_index: number
   snippet: string
   similarity: number
+  // Web search fields (when source_type === 'web')
+  url?: string
+  source_type?: 'rag' | 'web'
+}
+
+export interface WebSource {
+  title: string
+  url: string
+  snippet: string
 }
 
 export interface ModelOption {
@@ -167,4 +179,96 @@ export const MODELS: ModelOption[] = [
   { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openai', maxTokens: 128000 },
   { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'openai', maxTokens: 16385 },
 ]
+
+export interface AIProvider {
+  id: string
+  name: string
+  type: string
+  base_url: string
+  api_key: string
+  is_enabled: boolean
+  priority: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ModelConfig {
+  id: string
+  provider_id: string
+  model_id: string
+  display_name: string
+  description: string
+  icon_url: string
+  system_prompt: string
+  is_visible: boolean
+  sort_order: number
+  max_tokens: number
+  use_max_tokens: boolean
+  supports_streaming: boolean
+  supports_vision: boolean
+  created_at: string
+  updated_at: string
+  // joined
+  provider_name?: string
+  provider_type?: string
+}
+
+export interface DbConnection {
+  id: string
+  name: string
+  description: string
+  db_type: string
+  host: string
+  port: number
+  database_name: string
+  username: string
+  password: string
+  is_active: boolean
+  schema_cache: DbSchemaTable[]
+  last_synced_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DbSchemaTable {
+  table_name: string
+  schema_name: string
+  columns: { name: string; type: string; nullable: boolean }[]
+}
+
+export interface NetworkDrive {
+  id: string
+  name: string
+  description: string
+  unc_path: string
+  is_active: boolean
+  file_extensions: string[]
+  max_file_size_mb: number
+  file_count: number
+  total_chunks: number
+  last_synced_at: string | null
+  sync_status: 'idle' | 'syncing' | 'done' | 'error'
+  sync_error: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NetworkFile {
+  id: string
+  drive_id: string
+  file_path: string
+  filename: string
+  extension: string | null
+  file_size: number
+  mime_type: string | null
+  last_modified: string | null
+  indexed_at: string
+  chunk_count: number
+  char_count: number
+  status: 'pending' | 'processing' | 'done' | 'failed' | 'skipped'
+  error_message: string | null
+  content_hash: string | null
+  created_at: string
+  updated_at: string
+}
 

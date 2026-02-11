@@ -32,12 +32,89 @@ pre code {
   line-height: 1.5;
 }
 
+/* ───── Prose compacto estilo ChatGPT ───── */
+.prose p {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+.prose > p:first-child {
+  margin-top: 0;
+}
+.prose > p:last-child {
+  margin-bottom: 0;
+}
+.prose ul, .prose ol {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+  padding-left: 1.25em;
+}
+.prose li {
+  margin-top: 0.15em;
+  margin-bottom: 0.15em;
+}
+.prose li > p {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+}
+.prose h1:first-child, .prose h2:first-child, .prose h3:first-child {
+  margin-top: 0;
+}
+.prose blockquote {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose hr {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+.prose table {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875em;
+  line-height: 1.5;
+  overflow-x: auto;
+  display: block;
+}
+.prose thead {
+  border-bottom: 2px solid #d4d4d8;
+}
+.prose th {
+  padding: 0.5em 0.75em;
+  text-align: left;
+  font-weight: 600;
+  color: #27272a;
+  background: #f4f4f5;
+  white-space: nowrap;
+}
+.prose td {
+  padding: 0.4em 0.75em;
+  border-bottom: 1px solid #e4e4e7;
+  color: #3f3f46;
+}
+.prose tbody tr:hover {
+  background: #fafafa;
+}
+.prose tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+.prose tbody tr:nth-child(even):hover {
+  background: #f4f4f5;
+}
+
 .prose pre {
   background: #f4f4f5;
   border-radius: 0.5rem;
   padding: 1rem;
   overflow-x: auto;
   border: 1px solid #e4e4e7;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
 }
 
 .prose code:not(pre code) {
@@ -48,14 +125,99 @@ pre code {
   color: #18181b;
 }
 
-@keyframes blink {
+/* ───── Streaming cursor (Mejora 14) ───── */
+@keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 .streaming-cursor::after {
-  content: '▋';
-  animation: blink 1s infinite;
+  content: '|';
+  animation: cursor-blink 0.7s step-end infinite;
   color: var(--accent);
+  font-weight: 700;
+  font-size: 1em;
+  margin-left: 2px;
+}
+
+/* ───── Smooth fade-in for streamed content ───── */
+.prose > *:last-child {
+  animation: fadeInUp 0.15s ease-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0.5; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ───── Message entrance (Mejora 2) ───── */
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ───── Animate-in utility ───── */
+.animate-in {
+  animation: animateIn 0.3s ease-out;
+}
+@keyframes animateIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ───── Thinking dots (legacy compat) ───── */
+@keyframes thinking {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* ───── Typing indicator shimmer (Mejora 1) ───── */
+@keyframes shimmer-text {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.thinking-shimmer {
+  background: linear-gradient(90deg, #a1a1aa 0%, #3b82f6 50%, #a1a1aa 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text 2.5s linear infinite;
+}
+
+/* ───── Avatar glow when streaming (Mejora 7) ───── */
+@keyframes avatar-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+  50%      { box-shadow: 0 0 10px 3px rgba(99, 102, 241, 0.35); }
+}
+
+/* ───── Welcome screen animations (Mejora 11) ───── */
+@keyframes bounce-in {
+  0%   { transform: scale(0.3); opacity: 0; }
+  50%  { transform: scale(1.05); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ───── Scroll-to-bottom button (Mejora 13) ───── */
+@keyframes scroll-btn-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ───── Send button pulse (Mejora 4) ───── */
+@keyframes send-ready {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+
+/* ───── Chat background pattern (Mejora 3) ───── */
+.chat-bg-pattern {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fafafa 50%, #f4f4f5 100%);
+  background-attachment: fixed;
 }
 
 *:focus-visible {

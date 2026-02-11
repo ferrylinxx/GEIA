@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
-import AdminDashboard from '@/components/admin/AdminDashboard'
+import AdminPageClient from '@/components/admin/AdminPageClient'
 
 export default async function AdminPage() {
   const supabase = await createServerSupabaseClient()
@@ -17,12 +17,10 @@ export default async function AdminPage() {
   const { count: msgCount } = await serviceClient.from('messages').select('*', { count: 'exact', head: true })
   const { count: fileCount } = await serviceClient.from('files').select('*', { count: 'exact', head: true })
   const { count: chunkCount } = await serviceClient.from('file_chunks').select('*', { count: 'exact', head: true })
-  const { data: users } = await serviceClient.from('profiles').select('id, name, role, created_at').order('created_at', { ascending: false }).limit(50)
 
   return (
-    <AdminDashboard
+    <AdminPageClient
       stats={{ users: userCount || 0, conversations: convCount || 0, messages: msgCount || 0, files: fileCount || 0, chunks: chunkCount || 0 }}
-      users={users || []}
     />
   )
 }

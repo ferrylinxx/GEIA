@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Conversation } from '@/lib/types'
 import { useChatStore } from '@/store/chat-store'
-import { MoreHorizontal, Pencil, Trash2, Pin, Star, Copy, Download } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2, Pin, Star, Copy, Download, Share2, Check } from 'lucide-react'
 
 interface Props {
   conversation: Conversation
@@ -14,6 +14,7 @@ export default function ConversationItem({ conversation, active }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState(conversation.title)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'loading' | 'copied'>('idle')
   const menuRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const { setActiveConversation, deleteConversation, updateConversation, duplicateConversation } = useChatStore()
@@ -37,6 +38,24 @@ export default function ConversationItem({ conversation, active }: Props) {
     setRenaming(false)
   }
 
+  const handleShare = async () => {
+    setShareStatus('loading')
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation_id: conversation.id }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      await navigator.clipboard.writeText(data.url)
+      setShareStatus('copied')
+      setTimeout(() => { setShareStatus('idle'); setMenuOpen(false) }, 1500)
+    } catch {
+      setShareStatus('idle')
+    }
+  }
+
   const handleExport = async () => {
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
@@ -52,13 +71,17 @@ export default function ConversationItem({ conversation, active }: Props) {
   }
 
   return (
-    <div className={`relative group flex items-center rounded-lg transition-colors cursor-pointer ${active ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`}>
+    <div className={`relative group flex items-center rounded-lg transition-all duration-200 cursor-pointer ${
+      active
+        ? 'bg-zinc-200/80 border-l-[3px] border-blue-500 shadow-sm'
+        : 'border-l-[3px] border-transparent hover:bg-zinc-100 hover:border-zinc-300'
+    }`}>
       {renaming ? (
         <input ref={inputRef} value={title} onChange={e => setTitle(e.target.value)}
           onBlur={handleRename} onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setRenaming(false); setTitle(conversation.title) } }}
           className="flex-1 px-3 py-2 bg-transparent text-sm text-zinc-800 focus:outline-none" />
       ) : (
-        <button onClick={() => setActiveConversation(conversation.id)} className="flex-1 text-left px-3 py-2 text-sm truncate text-zinc-700">
+        <button onClick={() => setActiveConversation(conversation.id)} className={`flex-1 text-left px-3 py-2 text-sm truncate ${active ? 'text-zinc-900 font-medium' : 'text-zinc-700'}`}>
           {conversation.pinned && '📌 '}{conversation.favorite && '⭐ '}{conversation.title}
         </button>
       )}
@@ -85,6 +108,10 @@ export default function ConversationItem({ conversation, active }: Props) {
             <button onClick={() => { duplicateConversation(conversation.id); setMenuOpen(false) }}
               className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-50 flex items-center gap-2 text-zinc-600">
               <Copy size={12} /> Duplicar
+            </button>
+            <button onClick={handleShare} disabled={shareStatus === 'loading'}
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-50 flex items-center gap-2 text-zinc-600">
+              {shareStatus === 'copied' ? <><Check size={12} className="text-green-500" /> <span className="text-green-600">¡Enlace copiado!</span></> : shareStatus === 'loading' ? <><div className="w-3 h-3 border border-zinc-300 border-t-blue-500 rounded-full animate-spin" /> Compartiendo...</> : <><Share2 size={12} /> Compartir</>}
             </button>
             <button onClick={handleExport}
               className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-50 flex items-center gap-2 text-zinc-600">

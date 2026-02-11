@@ -1,0 +1,114 @@
+MANUAL INTERNO DE PROCEDIMIENTOS - GESEM S.L.
+================================================
+
+Versión: 3.2 | Fecha: Febrero 2026 | Departamento: Operaciones
+
+1. INTRODUCCIÓN
+---------------
+Este documento describe los procedimientos internos de GESEM S.L. para la gestión de proyectos de ingeniería, mantenimiento industrial y servicios técnicos. Todos los empleados deben conocer y seguir estos procedimientos.
+
+2. ESTRUCTURA ORGANIZATIVA
+---------------------------
+GESEM cuenta con los siguientes departamentos:
+- Dirección General: Responsable de la estrategia y toma de decisiones.
+- Departamento Técnico: Ingenieros y técnicos especializados en instalaciones industriales.
+- Departamento Comercial: Gestión de clientes, presupuestos y licitaciones.
+- Departamento de Administración: Facturación, contabilidad y recursos humanos.
+- Departamento de Calidad: Certificaciones ISO 9001, ISO 14001 y prevención de riesgos.
+
+3. PROCESO DE GESTIÓN DE PROYECTOS
+------------------------------------
+3.1 Fase de Captación
+El departamento comercial recibe solicitudes de presupuesto. Se registran en el sistema ERP con código PRY-XXXX. El plazo máximo para enviar presupuesto es de 5 días laborables.
+
+3.2 Fase de Planificación
+Una vez aceptado el presupuesto, el jefe de proyecto asigna recursos:
+- Personal técnico necesario
+- Materiales y equipos
+- Subcontrataciones si procede
+- Calendario de ejecución con hitos
+
+3.3 Fase de Ejecución
+Durante la ejecución se realizan partes de trabajo diarios. Cada técnico debe registrar:
+- Horas trabajadas por proyecto
+- Materiales utilizados
+- Incidencias o desviaciones
+- Fotografías del avance
+
+3.4 Fase de Cierre
+Al finalizar, se genera el acta de recepción firmada por el cliente. Se archiva toda la documentación en la carpeta de red: \\gesem-dc\Datos\Proyectos\[código].
+
+4. POLÍTICA DE VACACIONES Y PERMISOS
+--------------------------------------
+- Cada empleado tiene 23 días laborables de vacaciones al año.
+- Las vacaciones se solicitan con mínimo 15 días de antelación.
+- En agosto se permite un máximo del 50% de la plantilla de vacaciones simultáneamente.
+- Los permisos por asuntos propios son 3 días al año, no acumulables.
+- El horario de verano (junio-septiembre) es de 7:00 a 15:00 de lunes a viernes.
+- El horario de invierno es de 8:00 a 13:00 y de 15:00 a 18:00 de lunes a jueves, y viernes de 8:00 a 15:00.
+
+5. SEGURIDAD Y PREVENCIÓN DE RIESGOS
+--------------------------------------
+5.1 Equipos de Protección Individual (EPIs)
+Todo el personal de obra debe llevar obligatoriamente:
+- Casco de seguridad homologado
+- Botas de seguridad con puntera reforzada
+- Chaleco reflectante
+- Guantes de protección según el trabajo
+- Gafas de seguridad en trabajos con riesgo de proyección
+
+5.2 Formación obligatoria
+- Curso PRL básico de 60 horas (antes de incorporación)
+- Curso de trabajos en altura (anual)
+- Curso de riesgo eléctrico (bianual)
+- Simulacro de evacuación (semestral)
+
+5.3 Protocolo de accidentes
+En caso de accidente laboral:
+1. Asegurar la zona y atender al herido
+2. Llamar al 112 si es grave
+3. Notificar al responsable de prevención: Carlos Martínez (ext. 234)
+4. Rellenar el parte de accidente en las primeras 24 horas
+5. Investigación del accidente en los 5 días siguientes
+
+6. POLÍTICA DE USO DE HERRAMIENTAS DIGITALES
+----------------------------------------------
+6.1 Correo electrónico
+- Formato: nombre.apellido@gesem.es
+- Tamaño máximo de adjuntos: 25 MB
+- Prohibido el uso personal del correo corporativo
+
+6.2 Unidades de red
+- Z: → \\gesem-dc\Datos (documentación general)
+- Y: → \\gesem-dc\Proyectos (documentación de proyectos)
+- Backup automático diario a las 23:00
+
+6.3 Software autorizado
+- ERP: SAP Business One
+- CAD: AutoCAD 2025 y SolidWorks 2024
+- Ofimática: Microsoft 365
+- Comunicación: Microsoft Teams
+- Gestión de proyectos: Microsoft Project
+
+7. CONTACTOS DE EMERGENCIA
+----------------------------
+- Dirección General: Pere Soler - ext. 100 - pere.soler@gesem.es
+- Jefe de Operaciones: Marta García - ext. 110 - marta.garcia@gesem.es
+- Responsable de Prevención: Carlos Martínez - ext. 234 - carlos.martinez@gesem.es
+- Soporte IT: Ferran Garola - ext. 300 - ferran.garola@gesem.es
+- Administración: Laura Vidal - ext. 200 - laura.vidal@gesem.es
+
+8. TARIFAS Y PRECIOS INTERNOS 2026
+-------------------------------------
+- Hora ingeniero senior: 65 €/h
+- Hora ingeniero junior: 45 €/h
+- Hora técnico especialista: 40 €/h
+- Hora técnico ayudante: 30 €/h
+- Desplazamiento provincial: 0,35 €/km
+- Desplazamiento interprovincial: 0,40 €/km + dietas
+- Dieta completa: 45 €/día
+- Media dieta: 20 €/día
+
+Documento confidencial - Uso interno exclusivo de GESEM S.L.
+Prohibida su distribución fuera de la organización.
+

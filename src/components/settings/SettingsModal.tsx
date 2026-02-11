@@ -5,9 +5,9 @@ import { useUIStore } from '@/store/ui-store'
 import { createClient } from '@/lib/supabase/client'
 import { Profile, Memory, FileRecord } from '@/lib/types'
 import { useDropzone } from 'react-dropzone'
-import { X, User, MessageSquare, Palette, Shield, Save, Loader2, Brain, Plus, Trash2, ToggleLeft, ToggleRight, Upload, FileText, Image, Music, Video, BookOpen, RefreshCw, Eye, Search, FolderOpen, Mail, Lock, CheckCircle } from 'lucide-react'
+import { X, User, MessageSquare, Palette, Save, Loader2, Brain, Plus, Trash2, ToggleLeft, ToggleRight, Upload, FileText, Image, Music, Video, BookOpen, RefreshCw, Eye, Search, FolderOpen, Mail, Lock, CheckCircle } from 'lucide-react'
 
-type Tab = 'profile' | 'instructions' | 'memory' | 'files' | 'appearance' | 'admin'
+type Tab = 'profile' | 'instructions' | 'memory' | 'files' | 'appearance'
 
 export default function SettingsModal({ userId }: { userId?: string }) {
   const { setSettingsOpen, openFilePreview } = useUIStore()
@@ -20,6 +20,9 @@ export default function SettingsModal({ userId }: { userId?: string }) {
   const [instructionsWhat, setInstructionsWhat] = useState('')
   const [instructionsHow, setInstructionsHow] = useState('')
   const { theme, setTheme } = useUIStore()
+
+  // User email (from auth)
+  const [userEmail, setUserEmail] = useState('')
 
   // Email/password state
   const [newEmail, setNewEmail] = useState('')
@@ -50,10 +53,11 @@ export default function SettingsModal({ userId }: { userId?: string }) {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setUserEmail(user.email || '')
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (data) {
       setProfile(data)
-      setName(data.name || '')
+      setName(data.name || user.email?.split('@')[0] || '')
       setInstructionsEnabled(data.custom_instructions_enabled)
       setInstructionsWhat(data.custom_instructions_what || '')
       setInstructionsHow(data.custom_instructions_how || '')
@@ -225,7 +229,6 @@ export default function SettingsModal({ userId }: { userId?: string }) {
     { id: 'memory', label: 'Memoria', icon: <Brain size={14} /> },
     { id: 'files', label: 'Archivos', icon: <FolderOpen size={14} /> },
     { id: 'appearance', label: 'Apariencia', icon: <Palette size={14} /> },
-    ...(profile?.role === 'admin' ? [{ id: 'admin' as Tab, label: 'Admin', icon: <Shield size={14} /> }] : []),
   ]
 
   return (
@@ -255,7 +258,7 @@ export default function SettingsModal({ userId }: { userId?: string }) {
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden">
+                        <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden border border-zinc-200">
                           {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" /> : <User size={24} className="text-zinc-400" />}
                         </div>
                         <label className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-1 cursor-pointer hover:bg-blue-500 text-white">
@@ -263,14 +266,17 @@ export default function SettingsModal({ userId }: { userId?: string }) {
                           <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                         </label>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <label className="text-xs text-zinc-500 block mb-1">Nombre</label>
-                        <input value={name} onChange={e => setName(e.target.value)} className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm text-zinc-800 w-64 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input value={name} onChange={e => setName(e.target.value)} placeholder={userEmail.split('@')[0] || 'Tu nombre'} className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm text-zinc-800 w-64 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        {userEmail && <p className="text-[11px] text-zinc-400 mt-1">{userEmail}</p>}
                       </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-zinc-500 block mb-1">Rol</label>
-                      <span className={`px-2 py-0.5 rounded text-xs ${profile?.role === 'admin' ? 'bg-purple-50 text-purple-600' : 'bg-zinc-100 text-zinc-500'}`}>{profile?.role}</span>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <label className="text-xs text-zinc-500 block mb-1">Rol</label>
+                        <span className={`px-2 py-0.5 rounded text-xs ${profile?.role === 'admin' ? 'bg-purple-50 text-purple-600' : 'bg-zinc-100 text-zinc-500'}`}>{profile?.role === 'admin' ? 'Administrador' : 'Usuario'}</span>
+                      </div>
                     </div>
 
                     {/* Change email */}
@@ -430,6 +436,8 @@ export default function SettingsModal({ userId }: { userId?: string }) {
                     </div>
                   </div>
                 )}
+
+
               </>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
 
 // Cache models for 5 minutes
 let cachedModels: { id: string; name: string; owned_by: string }[] | null = null
@@ -8,10 +8,15 @@ const CACHE_DURATION = 5 * 60 * 1000
 
 // Friendly names for known models
 const FRIENDLY_NAMES: Record<string, string> = {
+  'gpt-5.3-codex': 'GPT-5.3 Codex',
+  'gpt-5.2': 'GPT-5.2',
+  'gpt-5.2-codex': 'GPT-5.2 Codex',
+  'gpt-5.1': 'GPT-5.1',
   'gpt-5': 'GPT-5',
   'gpt-5-mini': 'GPT-5 Mini',
   'gpt-5-turbo': 'GPT-5 Turbo',
   'gpt-4.5-preview': 'GPT-4.5 Preview',
+  'gpt-4.5': 'GPT-4.5',
   'gpt-4o': 'GPT-4o',
   'gpt-4o-mini': 'GPT-4o Mini',
   'gpt-4-turbo': 'GPT-4 Turbo',
@@ -40,6 +45,32 @@ export async function GET() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Check if admin has configured models in DB (always takes priority)
+  try {
+    const service = createServiceRoleClient()
+    const { data: dbModels } = await service
+      .from('model_configs')
+      .select('model_id, display_name, icon_url, description, is_visible, sort_order, ai_providers(name, type)')
+      .eq('is_visible', true)
+      .order('sort_order', { ascending: true })
+
+    if (dbModels && dbModels.length > 0) {
+      const adminModels = dbModels.map((m: Record<string, unknown>) => {
+        const provider = m.ai_providers as { name: string; type: string } | null
+        return {
+          id: m.model_id as string,
+          name: m.display_name as string,
+          owned_by: provider?.name || provider?.type || 'openai',
+          icon_url: (m.icon_url as string) || '',
+          description: (m.description as string) || '',
+        }
+      })
+      return NextResponse.json({ models: adminModels })
+    }
+  } catch {
+    // Fall through to dynamic fetch
+  }
 
   // Return cached if fresh
   if (cachedModels && Date.now() - cacheTime < CACHE_DURATION) {

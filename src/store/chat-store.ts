@@ -13,6 +13,10 @@ interface ChatState {
   selectedModel: string
   ragMode: RagMode
   citeMode: boolean
+  webSearch: boolean
+  dbQuery: boolean
+  networkDriveRag: boolean
+  imageGeneration: boolean
   isLoading: boolean
 
   setSidebarOpen: (open: boolean) => void
@@ -20,6 +24,10 @@ interface ChatState {
   setSelectedModel: (model: string) => void
   setRagMode: (mode: RagMode) => void
   setCiteMode: (cite: boolean) => void
+  setWebSearch: (enabled: boolean) => void
+  setDbQuery: (enabled: boolean) => void
+  setNetworkDriveRag: (enabled: boolean) => void
+  setImageGeneration: (enabled: boolean) => void
   setIsStreaming: (streaming: boolean) => void
   setStreamingContent: (content: string) => void
 
@@ -32,6 +40,7 @@ interface ChatState {
   duplicateConversation: (id: string) => Promise<string | null>
   addMessage: (msg: Partial<Message>) => void
   updateMessage: (id: string, updates: Partial<Message>) => void
+  removeMessagesAfter: (messageId: string) => void
   clearMessages: () => void
 }
 
@@ -46,6 +55,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   selectedModel: 'gpt-4o-mini',
   ragMode: 'off',
   citeMode: false,
+  webSearch: false,
+  dbQuery: false,
+  networkDriveRag: false,
+  imageGeneration: false,
   isLoading: false,
 
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -53,6 +66,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setSelectedModel: (model) => set({ selectedModel: model }),
   setRagMode: (mode) => set({ ragMode: mode }),
   setCiteMode: (cite) => set({ citeMode: cite }),
+  setWebSearch: (enabled) => set({ webSearch: enabled }),
+  setDbQuery: (enabled) => set({ dbQuery: enabled }),
+  setNetworkDriveRag: (enabled) => set({ networkDriveRag: enabled }),
+  setImageGeneration: (enabled) => set({ imageGeneration: enabled }),
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),
   setStreamingContent: (content) => set({ streamingContent: content }),
 
@@ -70,6 +87,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setActiveConversation: (id) => {
     set({ activeConversationId: id, messages: [] })
     if (id) get().loadMessages(id)
+    // Sync URL with active conversation
+    if (typeof window !== 'undefined') {
+      const target = id ? `/chat/${id}` : '/chat'
+      if (window.location.pathname !== target) {
+        window.history.pushState({}, '', target)
+      }
+    }
   },
 
   loadMessages: async (conversationId) => {
@@ -96,17 +120,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .single()
     if (error || !data) return null
     set((s) => ({ conversations: [data, ...s.conversations], activeConversationId: data.id, messages: [] }))
+    // Sync URL with new conversation
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', `/chat/${data.id}`)
+    }
     return data.id
   },
 
   deleteConversation: async (id) => {
     const supabase = createClient()
-    await supabase.from('conversations').update({ deleted_at: new Date().toISOString() }).eq('id', id)
+    // Hard delete - CASCADE will remove messages, tags, memories, etc.
+    const { error } = await supabase.from('conversations').delete().eq('id', id)
+    if (error) console.error('Error deleting conversation:', error)
+    const wasActive = get().activeConversationId === id
     set((s) => ({
       conversations: s.conversations.filter((c) => c.id !== id),
       activeConversationId: s.activeConversationId === id ? null : s.activeConversationId,
       messages: s.activeConversationId === id ? [] : s.messages,
     }))
+    // Navigate back to /chat if we deleted the active conversation
+    if (wasActive && typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/chat')
+    }
   },
 
   updateConversation: async (id, updates) => {
@@ -143,6 +178,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg as Message] })),
   updateMessage: (id, updates) => set((s) => ({ messages: s.messages.map((m) => (m.id === id ? { ...m, ...updates } : m)) })),
+  removeMessagesAfter: (messageId) => set((s) => {
+    const idx = s.messages.findIndex((m) => m.id === messageId)
+    if (idx < 0) return s
+    return { messages: s.messages.slice(0, idx + 1) }
+  }),
   clearMessages: () => set({ messages: [] }),
 }))
 
