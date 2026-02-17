@@ -42,7 +42,7 @@ export interface DocumentAnalysis {
 }
 
 export interface DocAnalysisConfig {
-  extraction_engine: 'pdf-parse' | 'tika' | 'hybrid'
+  extraction_engine: 'pdf2json' | 'tika' | 'hybrid'
   tika_server_url: string
   tika_timeout: number
   embedding_model: string
@@ -68,16 +68,8 @@ const CHUNK_OVERLAP = 200
 const EMBEDDING_MODEL = 'text-embedding-3-large'  // Upgraded from text-embedding-3-small
 const EMBEDDING_DIMENSIONS = 1536  // Using 1536 dims (HNSW index limit is 2000)
 // Note: text-embedding-3-large with 1536 dims is better quality than text-embedding-3-small
-let isPdfWorkerConfigured = false
 
-function ensurePdfParseWorker(pdfModule: typeof import('pdf-parse')) {
-  if (isPdfWorkerConfigured) return
-  const workerPath = path.join(process.cwd(), 'node_modules', 'pdf-parse', 'dist', 'worker', 'pdf.worker.mjs')
-  if (fs.existsSync(workerPath)) {
-    pdfModule.PDFParse.setWorker(pathToFileURL(workerPath).href)
-  }
-  isPdfWorkerConfigured = true
-}
+// Removed pdf-parse worker configuration - now using pdf2json
 
 // ✅ MEJORA #5: Chunking Semántico con LangChain
 async function chunkText(text: string): Promise<string[]> {
@@ -401,36 +393,52 @@ export async function extractTextAndMetadata(
           // In tika-only mode, throw the error
           throw tikaError
         }
-        // In hybrid mode, fall back to pdf-parse
-        console.warn('⚠️ Tika extraction failed, using pdf-parse fallback:', tikaError)
+        // In hybrid mode, fall back to pdf2json
+        console.warn('⚠️ Tika extraction failed, using pdf2json fallback:', tikaError)
       }
     }
 
-    // Use pdf-parse if not using Tika or if Tika failed in hybrid mode
+    // Use pdf2json if not using Tika or if Tika failed in hybrid mode
     if (!useTika || (config?.extraction_engine === 'hybrid' && text.trim().length < 100)) {
-      try {
-        const pdfModule = await import('pdf-parse')
-        ensurePdfParseWorker(pdfModule)
-        const parser = new pdfModule.PDFParse({ data: buffer })
-        const result = await parser.getText()
-        await parser.destroy()
-        text = String(result?.text || '')
-        pages = Number.isFinite(result?.total) ? Number(result.total) : null
-        const info = (result as unknown as { info?: Record<string, unknown> })?.info || {}
-        author = typeof info.Author === 'string' ? info.Author : null
-        title = typeof info.Title === 'string' ? info.Title : null
-        createdRaw = typeof info.CreationDate === 'string' ? info.CreationDate : null
-      } catch (modernErr) {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const legacy = require('pdf-parse')
-        const legacyParser = typeof legacy === 'function' ? legacy : legacy?.default
-        if (typeof legacyParser !== 'function') throw modernErr
-        const data = await legacyParser(buffer)
-        text = String(data?.text || '')
-        pages = Number.isFinite(data?.numpages) ? Number(data.numpages) : null
-        author = typeof data?.info?.Author === 'string' ? data.info.Author : null
-        title = typeof data?.info?.Title === 'string' ? data.info.Title : null
-        createdRaw = typeof data?.info?.CreationDate === 'string' ? data.info.CreationDate : null
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const PDFParser = require('pdf2json')
+
+      const pdfData = await new Promise<any>((resolve, reject) => {
+        const pdfParser = new PDFParser()
+
+        pdfParser.on('pdfParser_dataError', (errData: any) => reject(errData.parserError))
+        pdfParser.on('pdfParser_dataReady', (data: any) => resolve(data))
+
+        pdfParser.parseBuffer(buffer)
+      })
+
+      // Extract text from all pages
+      let fullText = ''
+      if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
+        pages = pdfData.Pages.length
+        for (const page of pdfData.Pages) {
+          if (page.Texts && Array.isArray(page.Texts)) {
+            for (const textItem of page.Texts) {
+              if (textItem.R && Array.isArray(textItem.R)) {
+                for (const run of textItem.R) {
+                  if (run.T) {
+                    fullText += decodeURIComponent(run.T) + ' '
+                  }
+                }
+              }
+            }
+            fullText += '\n'
+          }
+        }
+      }
+
+      text = fullText.trim()
+
+      // Extract metadata if available
+      if (pdfData.Meta) {
+        author = pdfData.Meta.Author || null
+        title = pdfData.Meta.Title || null
+        createdRaw = pdfData.Meta.CreationDate || null
       }
     }
 
