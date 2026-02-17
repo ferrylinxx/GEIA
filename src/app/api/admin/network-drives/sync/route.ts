@@ -196,29 +196,64 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
   const lower = ext.toLowerCase()
   if (lower === 'pdf') {
     try {
-      // ✅ FIX: Use pdf-parse instead of pdfjs-dist (simpler, no workers needed)
+      // ✅ FIX: Use pdf2json instead of pdf-parse/pdfjs-dist (no DOMMatrix dependency)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse')
+      const PDFParser = require('pdf2json')
 
       console.log('[PDF] Parsing document, buffer size:', buffer.length)
 
-      const data = await pdfParse(buffer)
+      return new Promise<string>((resolve, reject) => {
+        const pdfParser = new PDFParser()
 
-      console.log('[PDF] Document parsed, pages:', data.numpages)
-      console.log('[PDF] Total extracted text length:', data.text.length, 'chars')
+        pdfParser.on('pdfParser_dataError', (errData: any) => {
+          console.error('[PDF] Parse error:', errData.parserError)
+          reject(errData.parserError)
+        })
 
-      if (data.text.length > 0) {
-        console.log('[PDF] First 200 chars:', data.text.substring(0, 200))
-      }
+        pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+          try {
+            // Extract text from all pages
+            let fullText = ''
 
-      const text = data.text.trim()
+            if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
+              for (const page of pdfData.Pages) {
+                if (page.Texts && Array.isArray(page.Texts)) {
+                  for (const text of page.Texts) {
+                    if (text.R && Array.isArray(text.R)) {
+                      for (const run of text.R) {
+                        if (run.T) {
+                          // Decode URI-encoded text
+                          fullText += decodeURIComponent(run.T) + ' '
+                        }
+                      }
+                    }
+                  }
+                  fullText += '\n'
+                }
+              }
+            }
 
-      // ✅ M2: OCR disabled in this version
-      if (text.length < 100) {
-        console.log('[OCR] PDF text too short, but OCR is disabled in this version')
-      }
+            const text = fullText.trim()
 
-      return text
+            console.log('[PDF] Document parsed, pages:', pdfData.Pages?.length || 0)
+            console.log('[PDF] Total extracted text length:', text.length, 'chars')
+
+            if (text.length > 0) {
+              console.log('[PDF] First 200 chars:', text.substring(0, 200))
+            } else {
+              console.log('[OCR] PDF text too short, but OCR is disabled in this version')
+            }
+
+            resolve(text)
+          } catch (err) {
+            console.error('[PDF] Error processing PDF data:', err)
+            reject(err)
+          }
+        })
+
+        // Parse the buffer
+        pdfParser.parseBuffer(buffer)
+      })
     } catch (pdfErr) {
       console.error('[PDF] Error extracting text:', pdfErr)
       console.error('[PDF] Error stack:', (pdfErr as Error).stack)
