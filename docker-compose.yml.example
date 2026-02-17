@@ -12,6 +12,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
+      # Apache Tika Configuration (already configured in Dockerfile, but can be overridden here)
+      TIKA_SERVER_URL: "https://tika.fgarola.es"
+      TIKA_TIMEOUT: "30000"
+      EXTRACTION_ENGINE: "tika"
     # Mount network drives as volumes
     # ⚠️ IMPORTANT: Copy this file to 'docker-compose.yml' and update paths to your network drives
     volumes:
