@@ -172,21 +172,23 @@ async function chunkText(text: string, meta: ChunkMeta): Promise<string[]> {
   }
 }
 
-// ✅ M2: OCR function for scanned PDFs
+// ✅ M2: OCR function for scanned PDFs (DISABLED - worker issues in Docker)
 async function applyOCR(buffer: Buffer): Promise<string> {
-  try {
-    const Tesseract = await import('tesseract.js')
-    const { createWorker } = Tesseract
+  console.log('[OCR] OCR is disabled in this version due to worker compatibility issues')
+  return ''
+  // try {
+  //   const Tesseract = await import('tesseract.js')
+  //   const { createWorker } = Tesseract
 
-    const worker = await createWorker('spa+eng')  // Spanish + English
-    const { data } = await worker.recognize(buffer)
-    await worker.terminate()
+  //   const worker = await createWorker('spa+eng')  // Spanish + English
+  //   const { data } = await worker.recognize(buffer)
+  //   await worker.terminate()
 
-    return data.text || ''
-  } catch (error) {
-    console.error('[OCR] Failed:', error)
-    return ''
-  }
+  //   return data.text || ''
+  // } catch (error) {
+  //   console.error('[OCR] Failed:', error)
+  //   return ''
+  // }
 }
 
 // Extract text from file buffer based on extension
@@ -194,14 +196,19 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
   const lower = ext.toLowerCase()
   if (lower === 'pdf') {
     try {
-      // ✅ FIX: Use pdfjs-dist instead of pdf-parse to avoid DOMMatrix error
+      // ✅ FIX: Use pdfjs-dist without workers to avoid module resolution issues
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js')
+
+      // Disable worker to avoid "Cannot find module './pdf.worker.js'" error
+      pdfjsLib.GlobalWorkerOptions.workerSrc = null
 
       // Load PDF document
       const loadingTask = pdfjsLib.getDocument({
         data: new Uint8Array(buffer),
         useSystemFonts: true,
+        isEvalSupported: false,
+        useWorkerFetch: false,
       })
 
       const pdfDocument = await loadingTask.promise
@@ -220,31 +227,16 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
       await pdfDocument.destroy()
       const text = fullText.trim()
 
-      // ✅ M2: Apply OCR if extracted text is too short (likely scanned PDF)
+      // ✅ M2: OCR disabled in this version
       if (text.length < 100) {
-        console.log('[OCR] PDF text too short, applying OCR...')
-        const ocrText = await applyOCR(buffer)
-        if (ocrText.length > text.length) {
-          console.log(`[OCR] Success: ${ocrText.length} chars extracted`)
-          return ocrText
-        }
+        console.log('[OCR] PDF text too short, but OCR is disabled in this version')
       }
 
       return text
     } catch (pdfErr) {
       console.error('[PDF] Error extracting text:', pdfErr)
-      // Fallback to OCR if PDF parsing fails
-      try {
-        console.log('[OCR] PDF parsing failed, trying OCR...')
-        const ocrText = await applyOCR(buffer)
-        if (ocrText.length > 0) {
-          console.log(`[OCR] Success: ${ocrText.length} chars extracted`)
-          return ocrText
-        }
-      } catch (ocrErr) {
-        console.error('[OCR] OCR also failed:', ocrErr)
-      }
-      throw pdfErr
+      // Return empty string instead of crashing
+      return ''
     }
   }
   if (lower === 'docx' || lower === 'doc') {
