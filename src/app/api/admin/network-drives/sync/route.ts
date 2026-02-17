@@ -191,118 +191,75 @@ async function applyOCR(buffer: Buffer): Promise<string> {
   // }
 }
 
+// ✅ NUEVA: Extracción con Apache Tika
+async function extractWithTika(buffer: Buffer): Promise<string> {
+  const tikaUrl = process.env.TIKA_SERVER_URL || 'https://tika.fgarola.es'
+  const timeout = Number(process.env.TIKA_TIMEOUT) || 30000
+
+  try {
+    const baseUrl = tikaUrl.replace(/\/$/, '')
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+    const uint8Array = new Uint8Array(buffer)
+
+    const response = await fetch(`${baseUrl}/tika`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Accept': 'text/plain',
+      },
+      body: uint8Array,
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error(`Tika HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const text = await response.text()
+    console.log(`✅ Tika extraction: ${text.length} chars`)
+    return text.trim()
+  } catch (error) {
+    console.error('[Tika] Error extracting text:', error)
+    throw error
+  }
+}
+
 // Extract text from file buffer based on extension
 async function extractText(buffer: Buffer, ext: string): Promise<string> {
   const lower = ext.toLowerCase()
-  if (lower === 'pdf') {
+
+  // ✅ Use Apache Tika for all document types (PDF, DOCX, XLSX, PPTX, etc.)
+  const tikaSupported = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'odt', 'ods', 'odp', 'rtf']
+
+  if (tikaSupported.includes(lower)) {
     try {
-      // ✅ FIX: Use pdf2json instead of pdf-parse/pdfjs-dist (no DOMMatrix dependency)
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const PDFParser = require('pdf2json')
+      console.log(`[Tika] Extracting text from ${ext.toUpperCase()} using Apache Tika...`)
+      const text = await extractWithTika(buffer)
 
-      console.log('[PDF] Parsing document, buffer size:', buffer.length)
-
-      return new Promise<string>((resolve, reject) => {
-        const pdfParser = new PDFParser()
-
-        pdfParser.on('pdfParser_dataError', (errData: any) => {
-          console.error('[PDF] Parse error:', errData.parserError)
-          reject(errData.parserError)
-        })
-
-        pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
-          try {
-            // Extract text from all pages
-            let fullText = ''
-
-            if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
-              for (const page of pdfData.Pages) {
-                if (page.Texts && Array.isArray(page.Texts)) {
-                  for (const text of page.Texts) {
-                    if (text.R && Array.isArray(text.R)) {
-                      for (const run of text.R) {
-                        if (run.T) {
-                          // Decode URI-encoded text with error handling
-                          try {
-                            fullText += decodeURIComponent(run.T) + ' '
-                          } catch (decodeErr) {
-                            // If decode fails, use raw text
-                            console.warn('[PDF] Failed to decode text, using raw:', run.T.substring(0, 50))
-                            fullText += run.T + ' '
-                          }
-                        }
-                      }
-                    }
-                  }
-                  fullText += '\n'
-                }
-              }
-            }
-
-            const text = fullText.trim()
-
-            console.log('[PDF] Document parsed, pages:', pdfData.Pages?.length || 0)
-            console.log('[PDF] Total extracted text length:', text.length, 'chars')
-
-            if (text.length > 0) {
-              console.log('[PDF] First 200 chars:', text.substring(0, 200))
-            } else {
-              console.log('[OCR] PDF text too short, but OCR is disabled in this version')
-            }
-
-            resolve(text)
-          } catch (err) {
-            console.error('[PDF] Error processing PDF data:', err)
-            reject(err)
-          }
-        })
-
-        // Parse the buffer
-        pdfParser.parseBuffer(buffer)
-      })
-    } catch (pdfErr) {
-      console.error('[PDF] Error extracting text:', pdfErr)
-      console.error('[PDF] Error stack:', (pdfErr as Error).stack)
+      if (text.length > 0) {
+        console.log(`[Tika] Extracted ${text.length} chars from ${ext.toUpperCase()}`)
+        console.log(`[Tika] First 200 chars: ${text.substring(0, 200)}`)
+        return text
+      } else {
+        console.warn(`[Tika] No text extracted from ${ext.toUpperCase()}`)
+        return ''
+      }
+    } catch (tikaError) {
+      console.error(`[Tika] Failed to extract ${ext.toUpperCase()}:`, tikaError)
       // Return empty string instead of crashing
       return ''
     }
   }
-  if (lower === 'docx' || lower === 'doc') {
-    const mammoth = await import('mammoth')
-    const result = await mammoth.extractRawText({ buffer })
-    return result.value || ''
-  }
-  if (lower === 'xlsx' || lower === 'xls') {
-    const XLSX = await import('xlsx')
-    const workbook = XLSX.read(buffer, { type: 'buffer' })
-    let text = ''
-    for (const sheetName of workbook.SheetNames) {
-      const sheet = workbook.Sheets[sheetName]
-      text += `\n--- Hoja: ${sheetName} ---\n`
-      // Mejora 9: Formatear como tabla markdown para mejor contexto
-      const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ' | ', RS: '\n' })
-      text += csv
-    }
-    return text
-  }
-  // ── Mejora 3: Extracción PPTX corregida ──
-  if (lower === 'pptx' || lower === 'ppt') {
-    try {
-      const officeparser = await import('officeparser')
-      // parseOffice callback: (ast, err?) - AST first, error second
-      const text: string = await new Promise((resolve, reject) => {
-        officeparser.parseOffice(buffer, (ast, err) => {
-          if (err) reject(err)
-          else resolve(typeof ast === 'string' ? ast : (ast?.toString?.() || ''))
-        })
-      })
-      return text
-    } catch { return '' }
-  }
-  // Text-based files
-  if (['txt', 'csv', 'md', 'json', 'xml', 'html', 'log', 'rtf', 'py', 'js', 'ts', 'sql', 'yaml', 'yml', 'sh', 'bat', 'css', 'jsx', 'tsx'].includes(lower)) {
+
+  // Text-based files (fallback for non-Tika formats)
+  if (['txt', 'csv', 'md', 'json', 'xml', 'html', 'log', 'py', 'js', 'ts', 'sql', 'yaml', 'yml', 'sh', 'bat', 'css', 'jsx', 'tsx'].includes(lower)) {
     return buffer.toString('utf-8')
   }
+
   return ''
 }
 
