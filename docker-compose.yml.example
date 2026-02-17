@@ -13,15 +13,17 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
     # Mount network drives as volumes
+    # ⚠️ IMPORTANT: Copy this file to 'docker-compose.yml' and update paths to your network drives
     volumes:
       # GarCloud network drive (read-only)
       - type: bind
-        source: //GarCloud/gabo/Windows FGB
+        source: //YOUR_SERVER/YOUR_SHARE_1
         target: /mnt/garcloud
         read_only: true
       # Projectes network drive (read-only)
       - type: bind
-        source: //gesem-dc/Datos0/Web - Marketing/Ferran Garola treballs/Projectes (ideas)
+        source: //YOUR_SERVER/YOUR_SHARE_2
         target: /mnt/projectes
         read_only: true
     restart: unless-stopped
+

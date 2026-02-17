@@ -23,11 +23,18 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-# Note: Sensitive environment variables should be provided via docker-compose.yml or .env.local
-# Do not hardcode API keys in the Dockerfile for security reasons
+
+# ⚠️ IMPORTANT: Copy this file to 'Dockerfile' and replace with your actual API keys
+# Do NOT commit the Dockerfile with real API keys to Git
+ENV NEXT_PUBLIC_SUPABASE_URL="YOUR_SUPABASE_URL"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
+ENV SUPABASE_SERVICE_ROLE_KEY="YOUR_SUPABASE_SERVICE_ROLE_KEY"
+ENV OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
+ENV TAVILY_API_KEY="YOUR_TAVILY_API_KEY"
 ENV EMBEDDING_MODEL=text-embedding-3-large
 ENV EMBEDDING_DIMENSIONS=1536
 ENV DEFAULT_CHAT_MODEL=gpt-4o-mini
+ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ENV NEXT_PUBLIC_APP_VERSION="V2.6.0"
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
@@ -45,3 +52,4 @@ EXPOSE 3000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
+
