@@ -1,0 +1,21 @@
+.git
+.gitignore
+.next
+node_modules
+coverage
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Keep base env files ignored by default
+.env
+.env.*
+!.env.local
+!.env.production
+
+# Local-only artifacts
+test-docs
+logo
+tsconfig.tsbuildinfo

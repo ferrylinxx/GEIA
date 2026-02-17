@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AIProvider, ModelConfig } from '@/lib/types'
-import { Users, Bot, Plug, Trash2, Edit3, Plus, Eye, EyeOff, ArrowUp, ArrowDown, Shield, ShieldOff, Loader2, Save, X, Check, AlertTriangle, ChevronRight } from 'lucide-react'
+import { Users, Bot, Plug, Trash2, Edit3, Plus, Eye, EyeOff, ArrowUp, ArrowDown, Loader2, Save, X, Check, ChevronRight } from 'lucide-react'
 
 type AdminTab = 'users' | 'models' | 'providers'
 
@@ -39,11 +39,7 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  async function loadData() {
     setLoading(true)
     try {
       const [usersRes, providersRes, modelsRes] = await Promise.all([
@@ -57,6 +53,11 @@ export default function AdminSettings() {
     } catch (e) { console.error('Failed to load admin data', e) }
     setLoading(false)
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData()
+  }, [])
 
   // === USER MANAGEMENT ===
   const startEditUser = (u: UserRow) => {

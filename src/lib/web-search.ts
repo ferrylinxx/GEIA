@@ -9,19 +9,71 @@ export interface WebSearchResult {
 /** Tavily-generated summary answer (when available) */
 export let lastSearchAnswer: string | null = null
 
+const SEARCH_CACHE_TTL = 4 * 60 * 1000
+const PAGE_CONTENT_CACHE_TTL = 12 * 60 * 1000
+
+const searchCache = new Map<string, { timestamp: number; results: WebSearchResult[]; answer: string | null }>()
+const pageContentCache = new Map<string, { timestamp: number; content: string }>()
+
+const normalizeQueryKey = (query: string): string =>
+  query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim()
+
+const normalizeUrlKey = (url: string): string => {
+  try {
+    const parsed = new URL(url)
+    parsed.hash = ''
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase()
+    const path = parsed.pathname.replace(/\/+$/, '') || '/'
+    return `${parsed.protocol}//${host}${path}${parsed.search ? parsed.search : ''}`
+  } catch {
+    return url.trim().toLowerCase()
+  }
+}
+
+const cloneResults = (results: WebSearchResult[]): WebSearchResult[] =>
+  results.map((item) => ({ ...item }))
+
+const clearExpiredCaches = () => {
+  const now = Date.now()
+  for (const [key, entry] of searchCache.entries()) {
+    if (now - entry.timestamp > SEARCH_CACHE_TTL) searchCache.delete(key)
+  }
+  for (const [key, entry] of pageContentCache.entries()) {
+    if (now - entry.timestamp > PAGE_CONTENT_CACHE_TTL) pageContentCache.delete(key)
+  }
+}
+
 export async function searchWeb(query: string, numResults = 5): Promise<WebSearchResult[]> {
   lastSearchAnswer = null
+  clearExpiredCaches()
+  const cacheKey = `${numResults}:${normalizeQueryKey(query)}`
+  const cached = searchCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp <= SEARCH_CACHE_TTL) {
+    lastSearchAnswer = cached.answer
+    return cloneResults(cached.results).slice(0, numResults)
+  }
+
+  let results: WebSearchResult[] = []
   // Try Tavily first if API key is available (best for AI apps)
   if (process.env.TAVILY_API_KEY) {
     try {
-      return await searchWithTavily(query, numResults)
+      results = await searchWithTavily(query, numResults)
     } catch (e) {
       console.error('[Tavily] Error, falling back to DuckDuckGo:', e)
     }
   }
 
   // Fallback to DuckDuckGo HTML scraping (no API key needed)
-  return searchWithDuckDuckGo(query, numResults)
+  if (results.length === 0) {
+    results = await searchWithDuckDuckGo(query, numResults)
+  }
+
+  searchCache.set(cacheKey, {
+    timestamp: Date.now(),
+    results: cloneResults(results),
+    answer: lastSearchAnswer,
+  })
+  return cloneResults(results).slice(0, numResults)
 }
 
 /**
@@ -29,16 +81,40 @@ export async function searchWeb(query: string, numResults = 5): Promise<WebSearc
  */
 function detectQueryParams(query: string): { topic: 'general' | 'news' | 'finance'; time_range?: string; country?: string } {
   const q = query.toLowerCase()
-  const newsKeywords = ['noticias', 'noticia', 'hoy', 'ayer', 'última hora', 'actualidad', 'reciente', 'resultado', 'resultados', 'clasificación', 'jornada', 'partido', 'marcador', 'fichaje', 'elecciones', 'breaking']
-  const financeKeywords = ['cotización', 'bolsa', 'acciones', 'ibex', 'nasdaq', 'dow jones', 'crypto', 'bitcoin', 'precio acciones', 'stock price']
+
+  // Keywords for real-time/today queries (need day-level freshness)
+  const realtimeKeywords = ['hoy', 'today', 'ahora', 'now', 'ultimo', 'ultima', 'last', 'reciente', 'recent']
+  const isRealtime = realtimeKeywords.some(kw => q.includes(kw))
+
+  // Sports keywords (need fresh results)
+  const sportsKeywords = ['resultado', 'resultados', 'clasificacion', 'jornada', 'partido', 'marcador', 'gol', 'goles', 'fc barcelona', 'barca', 'real madrid', 'liga', 'champions', 'copa']
+  const isSports = sportsKeywords.some(kw => q.includes(kw))
+
+  // General news keywords
+  const newsKeywords = ['noticias', 'noticia', 'ayer', 'ultima hora', 'actualidad', 'fichaje', 'elecciones', 'breaking']
   const isNews = newsKeywords.some(kw => q.includes(kw))
+
+  // Finance keywords
+  const financeKeywords = ['cotizacion', 'bolsa', 'acciones', 'ibex', 'nasdaq', 'dow jones', 'crypto', 'bitcoin', 'precio acciones', 'stock price']
   const isFinance = financeKeywords.some(kw => q.includes(kw))
-  const topic = isFinance ? 'finance' : isNews ? 'news' : 'general'
-  // For news queries, limit to recent results
-  const time_range = isNews ? 'week' : undefined
+
+  // Determine topic
+  const topic = isFinance ? 'finance' : (isNews || isSports) ? 'news' : 'general'
+
+  // For real-time or sports queries, use 'day' (last 24 hours)
+  // For general news, use 'week'
+  // For everything else, no time restriction
+  let time_range: string | undefined = undefined
+  if (isRealtime || isSports) {
+    time_range = 'day'  // Last 24 hours for fresh data
+  } else if (isNews) {
+    time_range = 'week'
+  }
+
   // Detect Spanish context
-  const spanishKeywords = ['liga', 'laliga', 'españa', 'spanish', 'madrid', 'barcelona', 'gobierno español', 'ibex']
+  const spanishKeywords = ['liga', 'laliga', 'espana', 'spanish', 'madrid', 'barcelona', 'barca', 'gobierno espanol', 'ibex', 'fc barcelona']
   const country = spanishKeywords.some(kw => q.includes(kw)) ? 'spain' : undefined
+
   return { topic, time_range, country }
 }
 
@@ -133,6 +209,13 @@ async function searchWithDuckDuckGo(query: string, numResults: number): Promise<
  * Returns truncated plain text (max ~4000 chars) suitable for LLM context.
  */
 export async function fetchPageContent(url: string, maxChars = 4000): Promise<string> {
+  clearExpiredCaches()
+  const urlKey = normalizeUrlKey(url)
+  const cachedPage = pageContentCache.get(urlKey)
+  if (cachedPage && Date.now() - cachedPage.timestamp <= PAGE_CONTENT_CACHE_TTL) {
+    return cachedPage.content.slice(0, maxChars)
+  }
+
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
@@ -169,7 +252,7 @@ export async function fetchPageContent(url: string, maxChars = 4000): Promise<st
     })
 
     // Convert list items
-    text = text.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '• $1\n')
+    text = text.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n')
 
     // Convert headings to text with newlines
     text = text.replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, '\n$1\n')
@@ -202,7 +285,9 @@ export async function fetchPageContent(url: string, maxChars = 4000): Promise<st
     // Remove duplicate consecutive lines
     text = text.replace(/^(.+)$\n(?=\1$)/gm, '')
 
-    return text.slice(0, maxChars)
+    const finalText = text.slice(0, maxChars)
+    pageContentCache.set(urlKey, { timestamp: Date.now(), content: finalText })
+    return finalText
   } catch (e) {
     console.error(`[fetchPageContent] Error fetching ${url}:`, e instanceof Error ? e.message : e)
     return ''

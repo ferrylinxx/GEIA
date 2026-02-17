@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useUIStore } from '@/store/ui-store'
 import { FileRecord } from '@/lib/types'
 import { useDropzone } from 'react-dropzone'
+import { sanitizeFilename, coerceMimeType } from '@/lib/file-utils'
 import { Upload, FileText, Image, Music, Video, Trash2, BookOpen, Loader2, RefreshCw, Eye, X, Search } from 'lucide-react'
 
 interface Props {
@@ -18,7 +19,7 @@ export default function FileLibrary({ onClose, projectId = null }: Props) {
   const [uploading, setUploading] = useState(false)
   const [ingesting, setIngesting] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
-  const { openFilePreview } = useUIStore()
+  const { openFilePreview, addToast } = useUIStore()
 
   useEffect(() => { loadFiles() }, [projectId])
 
@@ -26,7 +27,11 @@ export default function FileLibrary({ onClose, projectId = null }: Props) {
     setLoading(true)
     const supabase = createClient()
     let query = supabase.from('files').select('*').order('created_at', { ascending: false })
-    if (projectId) query = query.eq('project_id', projectId)
+    if (projectId) {
+      query = query.eq('project_id', projectId)
+    } else {
+      query = query.is('project_id', null)
+    }
     const { data } = await query
     if (data) setFiles(data)
     setLoading(false)
@@ -39,14 +44,18 @@ export default function FileLibrary({ onClose, projectId = null }: Props) {
     if (!user) { setUploading(false); return }
 
     for (const file of acceptedFiles) {
-      const path = `${user.id}/${Date.now()}_${file.name}`
-      const { error } = await supabase.storage.from('user-files').upload(path, file)
+      const safeName = sanitizeFilename(file.name)
+      const mime = coerceMimeType(file.type, safeName)
+      const path = `${user.id}/${Date.now()}_${safeName}`
+      const { error } = await supabase.storage.from('user-files').upload(path, file, { contentType: mime })
       if (!error) {
         const { data: fileRec } = await supabase.from('files').insert({
           user_id: user.id, project_id: projectId, storage_path: path,
-          filename: file.name, mime: file.type, size: file.size,
+          filename: safeName, mime, size: file.size,
         }).select().single()
         if (fileRec) setFiles(prev => [fileRec, ...prev])
+      } else {
+        addToast({ type: 'error', message: `Error al subir "${file.name}": ${error.message}` })
       }
     }
     setUploading(false)
@@ -101,8 +110,8 @@ export default function FileLibrary({ onClose, projectId = null }: Props) {
   const filteredFiles = files.filter(f => f.filename.toLowerCase().includes(filter.toLowerCase()))
 
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="w-full max-w-3xl max-h-[85vh] bg-white border border-zinc-200 rounded-xl shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-3" onClick={onClose}>
+      <div className="w-full max-w-3xl max-h-[calc(100dvh-24px)] md:max-h-[85vh] bg-white border border-zinc-200 rounded-xl shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200">
           <h2 className="text-sm font-semibold flex items-center gap-2 text-zinc-800"><FileText size={16} className="text-blue-500" /> Archivos</h2>
           <div className="flex items-center gap-2">
@@ -147,18 +156,18 @@ export default function FileLibrary({ onClose, projectId = null }: Props) {
               <span className={`text-[10px] px-1.5 py-0.5 rounded ${f.ingest_status === 'done' ? 'bg-green-50 text-green-600' : f.ingest_status === 'failed' ? 'bg-red-50 text-red-600' : f.ingest_status === 'processing' ? 'bg-yellow-50 text-yellow-600' : 'bg-zinc-100 text-zinc-500'}`}>
                 {f.ingest_status === 'none' ? '—' : f.ingest_status}
               </span>
-              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openFilePreview(f.id)} className="p-1 hover:bg-zinc-200 rounded text-zinc-400" title="Vista previa"><Eye size={13} /></button>
+              <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openFilePreview(f.id)} className="p-2 md:p-1 hover:bg-zinc-200 rounded text-zinc-400" title="Vista previa"><Eye size={13} /></button>
                 {f.ingest_status !== 'done' && (
                   <button onClick={() => handleIngest(f.id)} disabled={ingesting === f.id}
-                    className="p-1 hover:bg-zinc-200 rounded text-emerald-500" title="Ingestar para RAG">
+                    className="p-2 md:p-1 hover:bg-zinc-200 rounded text-emerald-500" title="Ingestar para RAG">
                     {ingesting === f.id ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
                   </button>
                 )}
                 {f.ingest_status === 'done' && (
-                  <button onClick={() => handleIngest(f.id)} className="p-1 hover:bg-zinc-200 rounded text-yellow-500" title="Re-ingestar"><RefreshCw size={13} /></button>
+                  <button onClick={() => handleIngest(f.id)} className="p-2 md:p-1 hover:bg-zinc-200 rounded text-yellow-500" title="Re-ingestar"><RefreshCw size={13} /></button>
                 )}
-                <button onClick={() => handleDelete(f.id)} className="p-1 hover:bg-zinc-200 rounded text-red-500" title="Eliminar"><Trash2 size={13} /></button>
+                <button onClick={() => handleDelete(f.id)} className="p-2 md:p-1 hover:bg-zinc-200 rounded text-red-500" title="Eliminar"><Trash2 size={13} /></button>
               </div>
             </div>
           ))}
@@ -167,4 +176,3 @@ export default function FileLibrary({ onClose, projectId = null }: Props) {
     </div>
   )
 }
-

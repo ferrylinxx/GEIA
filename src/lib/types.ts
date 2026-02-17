@@ -2,6 +2,9 @@ export interface Profile {
   id: string
   name: string | null
   avatar_url: string | null
+  bio: string | null
+  gender: string | null
+  birth_date: string | null
   settings_json: Record<string, unknown>
   role: 'user' | 'admin'
   custom_instructions_enabled: boolean
@@ -16,7 +19,10 @@ export interface Project {
   user_id: string
   name: string
   description: string
+  instructions?: string | null
   memory_json: MemoryItem[]
+  my_role?: 'owner' | 'admin' | 'editor' | 'viewer'
+  is_owner?: boolean
   created_at: string
   updated_at: string
 }
@@ -41,6 +47,7 @@ export interface Conversation {
   id: string
   user_id: string
   project_id: string | null
+  project_folder_id?: string | null
   title: string
   pinned: boolean
   favorite: boolean
@@ -52,6 +59,10 @@ export interface Conversation {
   updated_at: string
   deleted_at: string | null
   forked_from_conversation_id: string | null
+  context_summary: string | null
+  summary_message_count: number | null
+  summary_generated_at: string | null
+  is_archived: boolean
 }
 
 export interface Message {
@@ -157,7 +168,10 @@ export interface ChunkSource {
   similarity: number
   // Web search fields (when source_type === 'web')
   url?: string
-  source_type?: 'rag' | 'web'
+  source_type?: 'rag' | 'web' | 'network'
+  // Network drive fields (when source_type === 'network')
+  network_file_id?: string
+  network_file_path?: string
 }
 
 export interface WebSource {
@@ -270,5 +284,93 @@ export interface NetworkFile {
   content_hash: string | null
   created_at: string
   updated_at: string
+  // M3: LLM Analysis fields
+  doc_type: string | null
+  doc_summary: string | null
+  doc_importance: 'critical' | 'important' | 'normal' | 'low' | null
+  doc_department: string | null
+  doc_entities: string[] | null
+  doc_key_dates: string[] | null
+  analyzed_at: string | null
+  priority_score: number | null
 }
 
+export interface Channel {
+  id: string
+  name: string
+  description: string
+  project_id: string | null
+  created_by: string
+  is_public: boolean
+  icon: string
+  created_at: string
+  updated_at: string
+  member_count?: number
+  is_member?: boolean
+  can_manage?: boolean
+}
+
+export interface ChannelMember {
+  id: string
+  channel_id: string
+  user_id: string
+  role: 'admin' | 'member'
+  joined_at: string
+  profile?: { name: string | null; avatar_url: string | null }
+}
+
+export interface ChannelMessage {
+  id: string
+  channel_id: string
+  user_id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  parent_message_id: string | null
+  created_at: string
+  updated_at: string
+  user_name?: string
+  user_avatar?: string | null
+  user_status?: 'online' | 'idle' | 'offline'
+  user_last_seen_at?: string | null
+  user_role?: 'user' | 'admin' | null
+  user_created_at?: string | null
+  user_bio?: string | null
+  user_gender?: string | null
+  user_birth_date?: string | null
+  channel_role?: 'admin' | 'member' | null
+  channel_joined_at?: string | null
+}
+
+export interface WebhookConfig {
+  id: string
+  user_id: string
+  name: string
+  webhook_type: 'discord' | 'slack'
+  webhook_url: string
+  enabled: boolean
+  min_messages: number
+  created_at: string
+  updated_at: string
+}
+
+
+export interface Banner {
+  id: string
+  title: string
+  message: string
+  type: 'info' | 'warning' | 'error' | 'success'
+  display_mode: 'banner' | 'popup' | 'both'
+  priority: number
+  dismissible: boolean
+  show_once: boolean
+  cta_label: string | null
+  cta_url: string | null
+  image_url: string | null
+  accent_color: string | null
+  is_active: boolean
+  start_date: string | null
+  end_date: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}

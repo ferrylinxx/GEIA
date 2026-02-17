@@ -1,0 +1,27 @@
+services:
+  geia:
+    image: ${DOCKER_IMAGE:-geia:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    env_file:
+      - ./.env.local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    # Mount network drives as volumes
+    volumes:
+      # GarCloud network drive (read-only)
+      - type: bind
+        source: //GarCloud/gabo/Windows FGB
+        target: /mnt/garcloud
+        read_only: true
+      # Projectes network drive (read-only)
+      - type: bind
+        source: //gesem-dc/Datos0/Web - Marketing/Ferran Garola treballs/Projectes (ideas)
+        target: /mnt/projectes
+        read_only: true
+    restart: unless-stopped

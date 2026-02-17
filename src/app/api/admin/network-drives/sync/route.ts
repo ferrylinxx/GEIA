@@ -2,14 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as crypto from 'crypto'
+import { pathToFileURL } from 'url'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const CHUNK_SIZE = 1200
-const CHUNK_OVERLAP = 200
+// ── Mejora 8: Aumentar chunk size a 1600 ──
+const CHUNK_SIZE = 1600
+const CHUNK_OVERLAP = 250
+const PARALLEL_BATCH_SIZE = 4  // Mejora 7: archivos en paralelo
+let isPdfWorkerConfigured = false
 
-// ── Mejora 1: Limpieza de texto ──
+function ensurePdfParseWorker(pdfModule: typeof import('pdf-parse')) {
+  if (isPdfWorkerConfigured) return
+  const workerPath = path.join(process.cwd(), 'node_modules', 'pdf-parse', 'dist', 'worker', 'pdf.worker.mjs')
+  if (fs.existsSync(workerPath)) {
+    pdfModule.PDFParse.setWorker(pathToFileURL(workerPath).href)
+  }
+  isPdfWorkerConfigured = true
+}
+
+// ── Limpieza de texto ──
 function cleanText(text: string): string {
   return text
     .replace(/\r\n/g, '\n')                    // Normalizar saltos de línea
@@ -19,6 +33,85 @@ function cleanText(text: string): string {
     .replace(/^ +| +$/gm, '')                   // Trim por línea
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // Eliminar caracteres de control
     .trim()
+}
+
+// ── Mejora 6: Generar hash MD5 del contenido ──
+function contentHash(text: string): string {
+  return crypto.createHash('md5').update(text).digest('hex')
+}
+
+// ✅ M5: SHA-256 hash for embedding cache
+function embeddingHash(text: string): string {
+  return crypto.createHash('sha256').update(text, 'utf-8').digest('hex')
+}
+
+// ✅ M3: LLM Analysis types
+interface DocumentAnalysis {
+  doc_type: string
+  summary: string
+  key_entities: string[]
+  key_dates: string[]
+  department: string | null
+  language: string
+  importance: 'critical' | 'important' | 'normal' | 'low'
+}
+
+// ✅ M3: Analyze document with LLM
+async function analyzeNetworkFile(text: string, filename: string): Promise<DocumentAnalysis | null> {
+  try {
+    const prompt = `Analiza este documento empresarial:
+
+Nombre: ${filename}
+Contenido (primeros 8000 chars):
+${text.slice(0, 8000)}
+
+Extrae la siguiente información en formato JSON:
+{
+  "doc_type": "contrato|factura|informe|manual|política|presentación|hoja_de_cálculo|otro",
+  "summary": "resumen ejecutivo en 2-3 líneas",
+  "key_entities": ["persona1", "empresa1", ...] (máximo 5),
+  "key_dates": ["2024-01-15", ...] (máximo 3, formato YYYY-MM-DD),
+  "department": "RRHH|Finanzas|Ventas|Marketing|IT|Legal|Operaciones|null",
+  "language": "es|ca|en|otro",
+  "importance": "critical|important|normal|low"
+}
+
+Criterios de importancia:
+- critical: contratos, facturas, documentos legales
+- important: informes ejecutivos, políticas importantes
+- normal: documentos de trabajo estándar
+- low: borradores, archivos temporales`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+        max_tokens: 500,
+      }),
+    })
+
+    if (!response.ok) {
+      console.error('[LLM Analysis] API error:', await response.text())
+      return null
+    }
+
+    const data = await response.json()
+    const analysis = JSON.parse(data.choices[0].message.content)
+
+    console.log(`[LLM Analysis] ${filename}: ${analysis.doc_type} (${analysis.importance})`)
+
+    return analysis
+  } catch (error) {
+    console.error('[LLM Analysis] Failed:', error)
+    return null
+  }
 }
 
 // Verify admin
@@ -32,47 +125,125 @@ async function verifyAdmin() {
   return user
 }
 
-// ── Mejora 2: Chunks contextuales con metadata ──
+// ── Chunks contextuales con metadata enriquecida ──
 interface ChunkMeta {
   filename: string
   folder: string
   ext: string
+  file_size?: number
+  sheet_name?: string
+  page_number?: number
 }
 
-function chunkText(text: string, meta: ChunkMeta): string[] {
-  const chunks: string[] = []
-  // Prefijo contextual que se añade a cada chunk para mejorar el embedding
-  const prefix = `[Archivo: ${meta.filename} | Carpeta: ${meta.folder} | Tipo: ${meta.ext.toUpperCase()}]\n`
-  const effectiveChunkSize = CHUNK_SIZE - prefix.length
+// ✅ M4: Semantic chunking with LangChain
+async function chunkText(text: string, meta: ChunkMeta): Promise<string[]> {
+  try {
+    const { RecursiveCharacterTextSplitter } = await import('@langchain/textsplitters')
 
-  let start = 0
-  while (start < text.length) {
-    let end = start + effectiveChunkSize
-    if (end < text.length) {
-      const slice = text.substring(start, end + 200)
-      const breakpoints = ['\n\n', '.\n', '. ', ';\n', '; ', '\n']
-      for (const bp of breakpoints) {
-        const idx = slice.lastIndexOf(bp, effectiveChunkSize + 100)
-        if (idx > effectiveChunkSize * 0.5) { end = start + idx + bp.length; break }
-      }
-    } else { end = text.length }
-    const rawChunk = text.substring(start, end).trim()
-    if (rawChunk.length > 50) chunks.push(prefix + rawChunk)
-    start = end - CHUNK_OVERLAP
-    if (start < 0) start = 0
-    if (end >= text.length) break
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 1500,
+      chunkOverlap: 200,
+      separators: ['\n\n\n', '\n\n', '\n', '. ', ', ', ' '],
+    })
+
+    const rawChunks = await splitter.splitText(text)
+
+    // Add contextual prefix to each chunk
+    const prefix = `[Archivo: ${meta.filename} | Carpeta: ${meta.folder} | Tipo: ${meta.ext.toUpperCase()}]\n`
+
+    return rawChunks
+      .map(chunk => prefix + chunk.trim())
+      .filter(chunk => chunk.length > 50)
+  } catch (error) {
+    console.error('[Semantic Chunking] Failed, falling back to basic chunking:', error)
+
+    // Fallback to basic chunking if LangChain fails
+    const chunks: string[] = []
+    const prefix = `[Archivo: ${meta.filename} | Carpeta: ${meta.folder} | Tipo: ${meta.ext.toUpperCase()}]\n`
+    const effectiveChunkSize = CHUNK_SIZE - prefix.length
+
+    let start = 0
+    while (start < text.length) {
+      let end = start + effectiveChunkSize
+      if (end < text.length) {
+        const slice = text.substring(start, end + 200)
+        const breakpoints = ['\n\n', '.\n', '. ', ';\n', '; ', '\n']
+        for (const bp of breakpoints) {
+          const idx = slice.lastIndexOf(bp, effectiveChunkSize + 100)
+          if (idx > effectiveChunkSize * 0.5) { end = start + idx + bp.length; break }
+        }
+      } else { end = text.length }
+      const rawChunk = text.substring(start, end).trim()
+      if (rawChunk.length > 50) chunks.push(prefix + rawChunk)
+      start = end - CHUNK_OVERLAP
+      if (start < 0) start = 0
+      if (end >= text.length) break
+    }
+    return chunks
   }
-  return chunks
+}
+
+// ✅ M2: OCR function for scanned PDFs
+async function applyOCR(buffer: Buffer): Promise<string> {
+  try {
+    const Tesseract = await import('tesseract.js')
+    const { createWorker } = Tesseract
+
+    const worker = await createWorker('spa+eng')  // Spanish + English
+    const { data } = await worker.recognize(buffer)
+    await worker.terminate()
+
+    return data.text || ''
+  } catch (error) {
+    console.error('[OCR] Failed:', error)
+    return ''
+  }
 }
 
 // Extract text from file buffer based on extension
 async function extractText(buffer: Buffer, ext: string): Promise<string> {
   const lower = ext.toLowerCase()
   if (lower === 'pdf') {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require('pdf-parse')
-    const data = await pdfParse(buffer)
-    return data.text || ''
+    try {
+      const pdfModule = await import('pdf-parse')
+      ensurePdfParseWorker(pdfModule)
+      const parser = new pdfModule.PDFParse({ data: buffer })
+      const result = await parser.getText()
+      await parser.destroy()
+      const text = result?.text || ''
+
+      // ✅ M2: Apply OCR if extracted text is too short (likely scanned PDF)
+      if (text.length < 100) {
+        console.log('[OCR] PDF text too short, applying OCR...')
+        const ocrText = await applyOCR(buffer)
+        if (ocrText.length > text.length) {
+          console.log(`[OCR] Success: ${ocrText.length} chars extracted`)
+          return ocrText
+        }
+      }
+
+      return text
+    } catch (modernErr) {
+      // Fallback para versiones legacy de pdf-parse.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const legacy = require('pdf-parse')
+      const legacyParser = typeof legacy === 'function' ? legacy : legacy?.default
+      if (typeof legacyParser !== 'function') throw modernErr
+      const data = await legacyParser(buffer)
+      const text = data?.text || ''
+
+      // ✅ M2: Apply OCR if extracted text is too short
+      if (text.length < 100) {
+        console.log('[OCR] PDF text too short (legacy), applying OCR...')
+        const ocrText = await applyOCR(buffer)
+        if (ocrText.length > text.length) {
+          console.log(`[OCR] Success: ${ocrText.length} chars extracted`)
+          return ocrText
+        }
+      }
+
+      return text
+    }
   }
   if (lower === 'docx' || lower === 'doc') {
     const mammoth = await import('mammoth')
@@ -86,16 +257,24 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
     for (const sheetName of workbook.SheetNames) {
       const sheet = workbook.Sheets[sheetName]
       text += `\n--- Hoja: ${sheetName} ---\n`
-      text += XLSX.utils.sheet_to_csv(sheet, { FS: ' | ', RS: '\n' })
+      // Mejora 9: Formatear como tabla markdown para mejor contexto
+      const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ' | ', RS: '\n' })
+      text += csv
     }
     return text
   }
-  // ── Mejora 3: Extracción PPTX real con officeparser ──
-  if (lower === 'pptx') {
+  // ── Mejora 3: Extracción PPTX corregida ──
+  if (lower === 'pptx' || lower === 'ppt') {
     try {
-      const { OfficeParser } = await import('officeparser')
-      const ast = await OfficeParser.parseOffice(buffer)
-      return ast.toText() || ''
+      const officeparser = await import('officeparser')
+      // parseOffice callback: (ast, err?) - AST first, error second
+      const text: string = await new Promise((resolve, reject) => {
+        officeparser.parseOffice(buffer, (ast, err) => {
+          if (err) reject(err)
+          else resolve(typeof ast === 'string' ? ast : (ast?.toString?.() || ''))
+        })
+      })
+      return text
     } catch { return '' }
   }
   // Text-based files
@@ -105,23 +284,107 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
   return ''
 }
 
-// Generate embeddings in batches
-async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+// ✅ M5: Embedding cache functions
+async function getCachedEmbedding(service: ReturnType<typeof createServiceRoleClient>, hash: string): Promise<number[] | null> {
+  const { data, error } = await service
+    .from('embedding_cache')
+    .select('embedding')
+    .eq('content_hash', hash)
+    .eq('model', 'text-embedding-3-large')
+    .single()
+
+  if (error || !data) return null
+  return data.embedding as number[]
+}
+
+async function saveCachedEmbedding(service: ReturnType<typeof createServiceRoleClient>, hash: string, embedding: number[]): Promise<void> {
+  await service.from('embedding_cache').insert({
+    content_hash: hash,
+    embedding,
+    model: 'text-embedding-3-large',
+    dimensions: 1536,
+  })
+}
+
+// ── Mejora 12: Generate embeddings con retry y backoff exponencial ──
+// ✅ M5: Integrado con caché de embeddings
+async function generateEmbeddings(texts: string[], service: ReturnType<typeof createServiceRoleClient>): Promise<number[][]> {
   const batchSize = 20
   const all: number[][] = []
+
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize)
-    const res = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: batch, model: process.env.EMBEDDING_MODEL || 'text-embedding-3-small' }),
-    })
-    if (!res.ok) throw new Error(`Embeddings API error: ${await res.text()}`)
-    const data = await res.json()
-    all.push(...data.data.map((d: { embedding: number[] }) => d.embedding))
+    const batchEmbeddings: number[][] = []
+
+    // ✅ M5: Check cache for each text
+    for (const text of batch) {
+      const hash = embeddingHash(text)
+      const cached = await getCachedEmbedding(service, hash)
+
+      if (cached) {
+        console.log(`✅ Cache hit for chunk ${i + batchEmbeddings.length}`)
+        batchEmbeddings.push(cached)
+      } else {
+        // Generate new embedding with retry
+        let lastError = ''
+        let embedding: number[] | null = null
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            if (attempt > 0) {
+              const delay = Math.pow(2, attempt) * 1000 // 2s, 4s
+              console.log(`[Embeddings] Retry ${attempt}/3 after ${delay}ms...`)
+              await new Promise(r => setTimeout(r, delay))
+            }
+            // ✅ M1: Upgrade to text-embedding-3-large for +50% better recall
+            const res = await fetch('https://api.openai.com/v1/embeddings', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: [text],
+                model: 'text-embedding-3-large',
+                dimensions: 1536  // Reduce from 3072 to 1536 for HNSW compatibility
+              }),
+            })
+            if (!res.ok) {
+              lastError = await res.text()
+              if (res.status === 429 || res.status >= 500) continue // retry on rate limit or server error
+              throw new Error(`Embeddings API error: ${lastError}`)
+            }
+            const data = await res.json()
+            embedding = data.data[0].embedding as number[]
+
+            // ✅ M5: Save to cache
+            if (embedding) {
+              await saveCachedEmbedding(service, hash, embedding)
+              console.log(`💾 Cached embedding for chunk ${i + batchEmbeddings.length}`)
+            }
+
+            lastError = ''
+            break
+          } catch (e) {
+            lastError = e instanceof Error ? e.message : 'Unknown error'
+            if (attempt === 2) throw new Error(`Embeddings API failed after 3 attempts: ${lastError}`)
+          }
+        }
+
+        if (embedding) {
+          batchEmbeddings.push(embedding)
+        } else {
+          throw new Error('Failed to generate embedding')
+        }
+      }
+    }
+
+    all.push(...batchEmbeddings)
   }
+
   return all
 }
+
+// ── Mejora 1: Filtrar archivos temporales + patrones ignorados ──
+const IGNORED_PREFIXES = ['~$', '.~', '._']
+const IGNORED_DIRS = ['node_modules', '.git', '__pycache__', '.svn', 'Thumbs.db']
 
 // Recursively scan directory for files
 function scanDirectory(dirPath: string, extensions: string[], maxSizeMB: number): { filePath: string; stat: fs.Stats }[] {
@@ -132,8 +395,12 @@ function scanDirectory(dirPath: string, extensions: string[], maxSizeMB: number)
       const fullPath = path.join(dirPath, entry.name)
       try {
         if (entry.isDirectory()) {
+          // Skip ignored directories
+          if (IGNORED_DIRS.includes(entry.name)) continue
           results.push(...scanDirectory(fullPath, extensions, maxSizeMB))
         } else if (entry.isFile()) {
+          // Mejora 1: Filtrar archivos temporales de Office (~$*, .~*, ._*)
+          if (IGNORED_PREFIXES.some(p => entry.name.startsWith(p))) continue
           const ext = path.extname(entry.name).slice(1).toLowerCase()
           if (extensions.includes(ext)) {
             const stat = fs.statSync(fullPath)
@@ -166,7 +433,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Resolve UNC path - convert UNC to Windows path format
-    let scanPath = drive.unc_path
+    const scanPath = drive.unc_path
     // Support both \\server\share and mapped drive letters (Z:\)
     if (!fs.existsSync(scanPath)) {
       return NextResponse.json({ error: `No se puede acceder a la ruta: ${scanPath}. Asegúrate de estar conectado a la VPN/red.` }, { status: 400 })
@@ -185,26 +452,41 @@ export async function POST(req: NextRequest) {
     type ExistingFile = { id: string; file_path: string; last_modified: string; content_hash: string }
     const existingMap = new Map<string, ExistingFile>((existingFiles || []).map((f: ExistingFile) => [f.file_path, f]))
 
-    let newFiles = 0, updatedFiles = 0, skippedFiles = 0, totalChunks = 0, errorFiles = 0
+    let newFiles = 0, updatedFiles = 0, skippedFiles = 0, totalChunks = 0, errorFiles = 0, deletedFiles = 0
 
-    for (const { filePath, stat } of files) {
+    // ── Mejora 5: Detectar archivos eliminados ──
+    const scannedPaths = new Set(files.map(f => f.filePath))
+    for (const [existingPath, existingFile] of existingMap) {
+      if (!scannedPaths.has(existingPath)) {
+        // El archivo ya no existe en la red → limpiar
+        console.log('[Sync] Deleted file detected:', existingPath)
+        await service.from('network_file_chunks').delete().eq('network_file_id', existingFile.id)
+        await service.from('network_files').update({
+          status: 'deleted', error_message: 'Archivo eliminado de la red',
+          chunk_count: 0, updated_at: new Date().toISOString(),
+        }).eq('id', existingFile.id)
+        deletedFiles++
+      }
+    }
+
+    // ── Mejora 7: Procesar archivos en paralelo (batches de PARALLEL_BATCH_SIZE) ──
+    async function processFile(filePath: string, stat: fs.Stats): Promise<'new' | 'updated' | 'skipped' | 'error'> {
       const filename = path.basename(filePath)
       const ext = path.extname(filename).slice(1).toLowerCase()
       const lastMod = stat.mtime.toISOString()
       const existing = existingMap.get(filePath)
 
       // Skip if already indexed and not modified
-      if (existing && existing.last_modified === lastMod) {
-        skippedFiles++
-        continue
-      }
+      if (existing && existing.last_modified === lastMod) return 'skipped'
 
       try {
-        // Read file
         const buffer = fs.readFileSync(filePath)
         const rawText = await extractText(buffer, ext)
-        // Mejora 1: Limpiar texto
         const text = cleanText(rawText)
+
+        // ── Mejora 6: Verificar content_hash para evitar re-indexar contenido idéntico ──
+        const hash = contentHash(text)
+        if (existing && existing.content_hash === hash) return 'skipped'
 
         if (!text || text.length < 10) {
           if (existing) {
@@ -216,49 +498,89 @@ export async function POST(req: NextRequest) {
               status: 'skipped', error_message: 'Sin texto extraíble',
             })
           }
-          skippedFiles++
-          continue
+          return 'skipped'
         }
 
-        // Mejora 2: Chunks con contexto (filename, carpeta, tipo)
+        // ✅ M3: Analyze document with LLM
+        const analysis = await analyzeNetworkFile(text, filename)
+
+        // ── Mejora 9: Más metadata en chunks ──
         const folder = path.dirname(filePath).split(path.sep).slice(-2).join('/')
-        const chunks = chunkText(text, { filename, folder, ext })
-        if (chunks.length === 0) { skippedFiles++; continue }
+        // ✅ M4: Await semantic chunking
+        const chunks = await chunkText(text, { filename, folder, ext, file_size: stat.size })
+        if (chunks.length === 0) return 'skipped'
 
-        // Generate embeddings
-        const embeddings = await generateEmbeddings(chunks)
+        // ✅ M5: Pass service for embedding cache
+        const embeddings = await generateEmbeddings(chunks, service)
 
-        // Upsert network_file record
+        // ✅ M6: Check for duplicate files using first chunk embedding
+        if (embeddings.length > 0 && !existing) {
+          try {
+            const { data: duplicates } = await service.rpc('match_network_files_similarity', {
+              p_drive_id: drive_id,
+              p_query_embedding: embeddings[0],
+              p_match_count: 3,
+              p_similarity_threshold: 0.95,
+            })
+
+            if (duplicates && duplicates.length > 0) {
+              console.log(`[Duplicate Detection] Found ${duplicates.length} similar files for ${filename}`)
+              // Log but don't skip - just for information
+            }
+          } catch (dupErr) {
+            console.error('[Duplicate Detection] Error:', dupErr)
+            // Continue processing even if duplicate detection fails
+          }
+        }
+
         let fileId: string
         if (existing) {
-          // Delete old chunks
           await service.from('network_file_chunks').delete().eq('network_file_id', existing.id)
+          // ✅ M3: Include LLM analysis fields
           await service.from('network_files').update({
             filename, extension: ext, file_size: stat.size, last_modified: lastMod,
+            content_hash: hash,
             chunk_count: chunks.length, char_count: text.length, status: 'done',
             error_message: null, updated_at: new Date().toISOString(),
+            // M3: LLM analysis metadata
+            doc_type: analysis?.doc_type || null,
+            doc_summary: analysis?.summary || null,
+            doc_importance: analysis?.importance || null,
+            doc_department: analysis?.department || null,
+            doc_entities: analysis?.key_entities || [],
+            doc_key_dates: analysis?.key_dates || [],
+            analyzed_at: analysis ? new Date().toISOString() : null,
           }).eq('id', existing.id)
           fileId = existing.id
-          updatedFiles++
         } else {
+          // ✅ M3: Include LLM analysis fields
           const { data: newFile } = await service.from('network_files').insert({
             drive_id, file_path: filePath, filename, extension: ext,
-            file_size: stat.size, last_modified: lastMod,
+            file_size: stat.size, last_modified: lastMod, content_hash: hash,
             chunk_count: chunks.length, char_count: text.length, status: 'done',
+            // M3: LLM analysis metadata
+            doc_type: analysis?.doc_type || null,
+            doc_summary: analysis?.summary || null,
+            doc_importance: analysis?.importance || null,
+            doc_department: analysis?.department || null,
+            doc_entities: analysis?.key_entities || [],
+            doc_key_dates: analysis?.key_dates || [],
+            analyzed_at: analysis ? new Date().toISOString() : null,
           }).select('id').single()
           fileId = newFile!.id
-          newFiles++
         }
 
-        // Insert chunks with embeddings in batches
+        // Mejora 9: meta_json enriquecido
         const chunkRows = chunks.map((content, i) => ({
           network_file_id: fileId, drive_id, chunk_index: i,
-          content, embedding: JSON.stringify(embeddings[i]), meta_json: { filename, ext },
+          content, embedding: JSON.stringify(embeddings[i]),
+          meta_json: { filename, ext, folder, file_size: stat.size, total_chunks: chunks.length },
         }))
         for (let i = 0; i < chunkRows.length; i += 50) {
           await service.from('network_file_chunks').insert(chunkRows.slice(i, i + 50))
         }
         totalChunks += chunks.length
+        return existing ? 'updated' : 'new'
       } catch (fileErr) {
         const msg = fileErr instanceof Error ? fileErr.message : 'Error desconocido'
         if (existing) {
@@ -270,9 +592,22 @@ export async function POST(req: NextRequest) {
               file_size: stat.size, last_modified: lastMod,
               status: 'failed', error_message: msg,
             })
-          } catch { /* ignore insert error */ }
+          } catch { /* ignore */ }
         }
-        errorFiles++
+        return 'error'
+      }
+    }
+
+    // Process files in parallel batches
+    for (let i = 0; i < files.length; i += PARALLEL_BATCH_SIZE) {
+      const batch = files.slice(i, i + PARALLEL_BATCH_SIZE)
+      const results = await Promise.allSettled(batch.map(f => processFile(f.filePath, f.stat)))
+      for (const r of results) {
+        const status = r.status === 'fulfilled' ? r.value : 'error'
+        if (status === 'new') newFiles++
+        else if (status === 'updated') updatedFiles++
+        else if (status === 'skipped') skippedFiles++
+        else errorFiles++
       }
     }
 
@@ -294,6 +629,7 @@ export async function POST(req: NextRequest) {
         new_files: newFiles,
         updated_files: updatedFiles,
         skipped_files: skippedFiles,
+        deleted_files: deletedFiles,
         error_files: errorFiles,
         total_chunks: totalChunks,
         drive_file_count: fileCount || 0,

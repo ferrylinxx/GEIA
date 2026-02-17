@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
 import AdminPageClient from '@/components/admin/AdminPageClient'
+import UserActivityTracker from '@/components/activity/UserActivityTracker'
 
 export default async function AdminPage() {
   const supabase = await createServerSupabaseClient()
@@ -19,9 +20,12 @@ export default async function AdminPage() {
   const { count: chunkCount } = await serviceClient.from('file_chunks').select('*', { count: 'exact', head: true })
 
   return (
-    <AdminPageClient
-      stats={{ users: userCount || 0, conversations: convCount || 0, messages: msgCount || 0, files: fileCount || 0, chunks: chunkCount || 0 }}
-    />
+    <>
+      <UserActivityTracker />
+      <AdminPageClient
+        currentUserId={user.id}
+        stats={{ users: userCount || 0, conversations: convCount || 0, messages: msgCount || 0, files: fileCount || 0, chunks: chunkCount || 0 }}
+      />
+    </>
   )
 }
-

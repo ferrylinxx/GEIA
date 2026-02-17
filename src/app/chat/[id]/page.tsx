@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useChatStore } from '@/store/chat-store'
 import ChatArea from '@/components/chat/ChatArea'
-import WelcomeScreen from '@/components/chat/WelcomeScreen'
+import { Loader2 } from 'lucide-react'
 
 export default function ChatIdPage() {
   const params = useParams()
@@ -20,9 +20,15 @@ export default function ChatIdPage() {
   }, [conversationId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!activeConversationId) {
-    return <WelcomeScreen />
+    return (
+      <div className="h-full w-full flex items-center justify-center text-zinc-500">
+        <span className="inline-flex items-center gap-2 text-sm">
+          <Loader2 size={16} className="animate-spin" />
+          Cargando chat...
+        </span>
+      </div>
+    )
   }
 
   return <ChatArea />
 }
-

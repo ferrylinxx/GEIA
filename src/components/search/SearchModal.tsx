@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useUIStore } from '@/store/ui-store'
 import { useChatStore } from '@/store/chat-store'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +19,7 @@ interface SearchResult {
 export default function SearchModal() {
   const { setSearchOpen } = useUIStore()
   const { setActiveConversation } = useChatStore()
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -48,12 +50,13 @@ export default function SearchModal() {
 
   const handleSelect = (convId: string) => {
     setActiveConversation(convId)
+    router.push(`/chat/${convId}`)
     setSearchOpen(false)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-center pt-[15vh]" onClick={() => setSearchOpen(false)}>
-      <div className="w-full max-w-2xl bg-white border border-zinc-200 rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-center pt-3 md:pt-[15vh] px-3" onClick={() => setSearchOpen(false)}>
+      <div className="w-full max-w-2xl bg-white border border-zinc-200 rounded-xl shadow-xl max-h-[calc(100dvh-24px)] md:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-200">
           <Search size={18} className="text-zinc-400" />
@@ -64,7 +67,7 @@ export default function SearchModal() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 px-4 py-2 border-b border-zinc-200">
+        <div className="flex flex-wrap gap-2 px-4 py-2 border-b border-zinc-200">
           <button onClick={() => setFilters(f => ({ ...f, favorites: !f.favorites }))}
             className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md ${filters.favorites ? 'bg-yellow-50 text-yellow-600' : 'text-zinc-500 hover:bg-zinc-100'}`}>
             <Star size={12} /> Favoritos
@@ -80,7 +83,7 @@ export default function SearchModal() {
         </div>
 
         {/* Results */}
-        <div className="max-h-[50vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {loading && <div className="text-center py-8 text-sm text-zinc-400">Buscando...</div>}
           {!loading && results.length === 0 && query && (
             <div className="text-center py-8 text-sm text-zinc-400">Sin resultados</div>
@@ -106,4 +109,3 @@ export default function SearchModal() {
     </div>
   )
 }
-
