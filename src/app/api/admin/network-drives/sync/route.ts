@@ -3,7 +3,6 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
-import { pathToFileURL } from 'url'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -12,16 +11,6 @@ export const maxDuration = 300
 const CHUNK_SIZE = 1600
 const CHUNK_OVERLAP = 250
 const PARALLEL_BATCH_SIZE = 4  // Mejora 7: archivos en paralelo
-let isPdfWorkerConfigured = false
-
-function ensurePdfParseWorker(pdfModule: typeof import('pdf-parse')) {
-  if (isPdfWorkerConfigured) return
-  const workerPath = path.join(process.cwd(), 'node_modules', 'pdf-parse', 'dist', 'worker', 'pdf.worker.mjs')
-  if (fs.existsSync(workerPath)) {
-    pdfModule.PDFParse.setWorker(pathToFileURL(workerPath).href)
-  }
-  isPdfWorkerConfigured = true
-}
 
 // ── Limpieza de texto ──
 function cleanText(text: string): string {
@@ -205,12 +194,31 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
   const lower = ext.toLowerCase()
   if (lower === 'pdf') {
     try {
-      const pdfModule = await import('pdf-parse')
-      ensurePdfParseWorker(pdfModule)
-      const parser = new pdfModule.PDFParse({ data: buffer })
-      const result = await parser.getText()
-      await parser.destroy()
-      const text = result?.text || ''
+      // ✅ FIX: Use pdfjs-dist instead of pdf-parse to avoid DOMMatrix error
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js')
+
+      // Load PDF document
+      const loadingTask = pdfjsLib.getDocument({
+        data: new Uint8Array(buffer),
+        useSystemFonts: true,
+      })
+
+      const pdfDocument = await loadingTask.promise
+      let fullText = ''
+
+      // Extract text from each page
+      for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+        const page = await pdfDocument.getPage(pageNum)
+        const textContent = await page.getTextContent()
+        const pageText = textContent.items
+          .map((item: any) => item.str || '')
+          .join(' ')
+        fullText += pageText + '\n'
+      }
+
+      await pdfDocument.destroy()
+      const text = fullText.trim()
 
       // ✅ M2: Apply OCR if extracted text is too short (likely scanned PDF)
       if (text.length < 100) {
@@ -223,26 +231,20 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
       }
 
       return text
-    } catch (modernErr) {
-      // Fallback para versiones legacy de pdf-parse.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const legacy = require('pdf-parse')
-      const legacyParser = typeof legacy === 'function' ? legacy : legacy?.default
-      if (typeof legacyParser !== 'function') throw modernErr
-      const data = await legacyParser(buffer)
-      const text = data?.text || ''
-
-      // ✅ M2: Apply OCR if extracted text is too short
-      if (text.length < 100) {
-        console.log('[OCR] PDF text too short (legacy), applying OCR...')
+    } catch (pdfErr) {
+      console.error('[PDF] Error extracting text:', pdfErr)
+      // Fallback to OCR if PDF parsing fails
+      try {
+        console.log('[OCR] PDF parsing failed, trying OCR...')
         const ocrText = await applyOCR(buffer)
-        if (ocrText.length > text.length) {
+        if (ocrText.length > 0) {
           console.log(`[OCR] Success: ${ocrText.length} chars extracted`)
           return ocrText
         }
+      } catch (ocrErr) {
+        console.error('[OCR] OCR also failed:', ocrErr)
       }
-
-      return text
+      throw pdfErr
     }
   }
   if (lower === 'docx' || lower === 'doc') {
