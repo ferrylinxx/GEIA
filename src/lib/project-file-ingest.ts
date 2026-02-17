@@ -422,7 +422,14 @@ export async function extractTextAndMetadata(
               if (textItem.R && Array.isArray(textItem.R)) {
                 for (const run of textItem.R) {
                   if (run.T) {
-                    fullText += decodeURIComponent(run.T) + ' '
+                    // Decode URI-encoded text with error handling
+                    try {
+                      fullText += decodeURIComponent(run.T) + ' '
+                    } catch (decodeErr) {
+                      // If decode fails, use raw text
+                      console.warn('[PDF] Failed to decode text, using raw:', run.T.substring(0, 50))
+                      fullText += run.T + ' '
+                    }
                   }
                 }
               }

@@ -222,8 +222,14 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
                     if (text.R && Array.isArray(text.R)) {
                       for (const run of text.R) {
                         if (run.T) {
-                          // Decode URI-encoded text
-                          fullText += decodeURIComponent(run.T) + ' '
+                          // Decode URI-encoded text with error handling
+                          try {
+                            fullText += decodeURIComponent(run.T) + ' '
+                          } catch (decodeErr) {
+                            // If decode fails, use raw text
+                            console.warn('[PDF] Failed to decode text, using raw:', run.T.substring(0, 50))
+                            fullText += run.T + ' '
+                          }
                         }
                       }
                     }
@@ -491,6 +497,12 @@ export async function POST(req: NextRequest) {
       const ext = path.extname(filename).slice(1).toLowerCase()
       const lastMod = stat.mtime.toISOString()
       const existing = existingMap.get(filePath)
+
+      // ✅ Skip temporary Office files (start with ~$)
+      if (filename.startsWith('~$')) {
+        console.log(`⏭️ Skipping temporary Office file: ${filename}`)
+        return 'skipped'
+      }
 
       // Skip if already indexed and not modified
       if (existing && existing.last_modified === lastMod) return 'skipped'
