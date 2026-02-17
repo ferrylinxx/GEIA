@@ -10,7 +10,7 @@ export const maxDuration = 300
 // ── Mejora 8: Aumentar chunk size a 1600 ──
 const CHUNK_SIZE = 1600
 const CHUNK_OVERLAP = 250
-const PARALLEL_BATCH_SIZE = 4  // Mejora 7: archivos en paralelo
+const PARALLEL_BATCH_SIZE = 1  // Mejora 7: archivos en paralelo
 
 // ── Limpieza de texto ──
 function cleanText(text: string): string {
@@ -192,9 +192,9 @@ async function applyOCR(buffer: Buffer): Promise<string> {
 }
 
 // ✅ NUEVA: Extracción con Apache Tika
-async function extractWithTika(buffer: Buffer): Promise<string> {
+async function extractWithTika(buffer: Buffer, filename: string = 'unknown'): Promise<string> {
   const tikaUrl = process.env.TIKA_SERVER_URL || 'https://tika.fgarola.es'
-  const timeout = Number(process.env.TIKA_TIMEOUT) || 30000
+  const timeout = Number(process.env.TIKA_TIMEOUT) || 120000  // 120 segundos
 
   try {
     const baseUrl = tikaUrl.replace(/\/$/, '')
@@ -202,6 +202,10 @@ async function extractWithTika(buffer: Buffer): Promise<string> {
     const timeoutId = setTimeout(() => controller.abort(), timeout)
 
     const uint8Array = new Uint8Array(buffer)
+    const fileSizeMB = (buffer.length / 1024 / 1024).toFixed(2)
+
+    console.log(`[Tika] 📄 ${filename} (${fileSizeMB} MB) - Starting extraction...`)
+    const startTime = Date.now()
 
     const response = await fetch(`${baseUrl}/tika`, {
       method: 'PUT',
@@ -216,50 +220,46 @@ async function extractWithTika(buffer: Buffer): Promise<string> {
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      throw new Error(`Tika HTTP ${response.status}: ${response.statusText}`)
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
     const text = await response.text()
-    console.log(`✅ Tika extraction: ${text.length} chars`)
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+    console.log(`[Tika] ✅ ${filename}: ${text.length} chars in ${duration}s`)
     return text.trim()
   } catch (error) {
-    console.error('[Tika] Error extracting text:', error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[Tika] ❌ ${filename}: ${errorMsg}`)
     throw error
   }
 }
 
 // Extract text from file buffer based on extension
-async function extractText(buffer: Buffer, ext: string): Promise<string> {
+async function extractText(buffer: Buffer, ext: string, filename: string = 'unknown'): Promise<string> {
   const lower = ext.toLowerCase()
 
-  // ✅ Use Apache Tika for all document types (PDF, DOCX, XLSX, PPTX, etc.)
+  // ✅ Use Apache Tika for all document types
   const tikaSupported = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'odt', 'ods', 'odp', 'rtf']
 
   if (tikaSupported.includes(lower)) {
     try {
-      console.log(`[Tika] Extracting text from ${ext.toUpperCase()} using Apache Tika...`)
-      const text = await extractWithTika(buffer)
-
+      const text = await extractWithTika(buffer, filename)
       if (text.length > 0) {
-        console.log(`[Tika] Extracted ${text.length} chars from ${ext.toUpperCase()}`)
-        console.log(`[Tika] First 200 chars: ${text.substring(0, 200)}`)
         return text
       } else {
-        console.warn(`[Tika] No text extracted from ${ext.toUpperCase()}`)
+        console.warn(`[Tika] ⚠️ No text extracted from ${filename}`)
         return ''
       }
     } catch (tikaError) {
-      console.error(`[Tika] Failed to extract ${ext.toUpperCase()}:`, tikaError)
-      // Return empty string instead of crashing
+      console.error(`[Tika] ❌ Failed: ${filename}`)
       return ''
     }
   }
 
-  // Text-based files (fallback for non-Tika formats)
+  // Text-based files
   if (['txt', 'csv', 'md', 'json', 'xml', 'html', 'log', 'py', 'js', 'ts', 'sql', 'yaml', 'yml', 'sh', 'bat', 'css', 'jsx', 'tsx'].includes(lower)) {
     return buffer.toString('utf-8')
   }
-
   return ''
 }
 
@@ -455,18 +455,13 @@ export async function POST(req: NextRequest) {
       const lastMod = stat.mtime.toISOString()
       const existing = existingMap.get(filePath)
 
-      // ✅ Skip temporary Office files (start with ~$)
-      if (filename.startsWith('~$')) {
-        console.log(`⏭️ Skipping temporary Office file: ${filename}`)
-        return 'skipped'
-      }
-
       // Skip if already indexed and not modified
       if (existing && existing.last_modified === lastMod) return 'skipped'
 
       try {
         const buffer = fs.readFileSync(filePath)
-        const rawText = await extractText(buffer, ext)
+        const filename = path.basename(filePath)
+        const rawText = await extractText(buffer, ext, filename)
         const text = cleanText(rawText)
 
         // ── Mejora 6: Verificar content_hash para evitar re-indexar contenido idéntico ──
