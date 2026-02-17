@@ -196,36 +196,22 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
   const lower = ext.toLowerCase()
   if (lower === 'pdf') {
     try {
-      // ✅ FIX: Use pdfjs-dist without workers to avoid module resolution issues
+      // ✅ FIX: Use pdf-parse instead of pdfjs-dist (simpler, no workers needed)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js')
+      const pdfParse = require('pdf-parse')
 
-      // Disable worker to avoid "Cannot find module './pdf.worker.js'" error
-      pdfjsLib.GlobalWorkerOptions.workerSrc = null
+      console.log('[PDF] Parsing document, buffer size:', buffer.length)
 
-      // Load PDF document
-      const loadingTask = pdfjsLib.getDocument({
-        data: new Uint8Array(buffer),
-        useSystemFonts: true,
-        isEvalSupported: false,
-        useWorkerFetch: false,
-      })
+      const data = await pdfParse(buffer)
 
-      const pdfDocument = await loadingTask.promise
-      let fullText = ''
+      console.log('[PDF] Document parsed, pages:', data.numpages)
+      console.log('[PDF] Total extracted text length:', data.text.length, 'chars')
 
-      // Extract text from each page
-      for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
-        const page = await pdfDocument.getPage(pageNum)
-        const textContent = await page.getTextContent()
-        const pageText = textContent.items
-          .map((item: any) => item.str || '')
-          .join(' ')
-        fullText += pageText + '\n'
+      if (data.text.length > 0) {
+        console.log('[PDF] First 200 chars:', data.text.substring(0, 200))
       }
 
-      await pdfDocument.destroy()
-      const text = fullText.trim()
+      const text = data.text.trim()
 
       // ✅ M2: OCR disabled in this version
       if (text.length < 100) {
@@ -235,6 +221,7 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
       return text
     } catch (pdfErr) {
       console.error('[PDF] Error extracting text:', pdfErr)
+      console.error('[PDF] Error stack:', (pdfErr as Error).stack)
       // Return empty string instead of crashing
       return ''
     }
