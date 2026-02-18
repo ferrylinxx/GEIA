@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     loadSharedContextMap(service, user.id, requestedUserIds),
   ])
 
-  const statuses: Record<string, { status: 'online' | 'idle' | 'offline'; last_seen_at: string | null }> = {}
+  const statuses: Record<string, { status: 'online' | 'typing' | 'read' | 'offline'; last_seen_at: string | null }> = {}
   for (const userId of requestedUserIds) {
     statuses[userId] = buildMaskedActivityForViewer({
       viewerUserId: user.id,

@@ -24,7 +24,7 @@ interface UserRow {
   role: string
   avatar_url: string | null
   created_at: string
-  activity_status?: 'online' | 'idle' | 'offline'
+  activity_status?: 'online' | 'typing' | 'read' | 'offline'
   activity_last_seen_at?: string | null
 }
 
@@ -793,9 +793,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     setCreatingUser(false)
   }
 
-  const statusInfo = (status?: 'online' | 'idle' | 'offline') => {
+  const statusInfo = (status?: 'online' | 'typing' | 'read' | 'offline') => {
     if (status === 'online') return { label: 'En linea', dot: 'bg-emerald-500', text: 'text-emerald-600' }
-    if (status === 'idle') return { label: 'Ausente', dot: 'bg-amber-500', text: 'text-amber-600' }
+    if (status === 'typing') return { label: 'Escribiendo...', dot: 'bg-blue-500', text: 'text-blue-600' }
+    if (status === 'read') return { label: 'Leído', dot: 'bg-purple-500', text: 'text-purple-600' }
     return { label: 'Desconectado', dot: 'bg-zinc-400', text: 'text-zinc-500' }
   }
 

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.user_activity_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   session_id TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'offline' CHECK (status IN ('online', 'idle', 'offline')),
+  status TEXT NOT NULL DEFAULT 'offline' CHECK (status IN ('online', 'typing', 'read', 'offline')),
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_activity_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_page TEXT,

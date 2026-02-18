@@ -1,4 +1,4 @@
-export type ActivityStatus = 'online' | 'idle' | 'offline'
+export type ActivityStatus = 'online' | 'typing' | 'read' | 'offline'
 export type ActivityVisibility = 'everyone' | 'shared' | 'nobody'
 
 export interface ActivityRow {
@@ -45,13 +45,11 @@ export function computeEffectiveStatus(row: Pick<ActivityAggregate, 'status' | '
   if (!Number.isFinite(lastSeenMs)) return 'offline'
   if (nowMs - lastSeenMs > ONLINE_STALE_MS) return 'offline'
 
-  // Never force an immediate offline state from a transient ping.
-  // A user is considered offline only after the stale window passes.
-  if (row.status === 'idle' || row.status === 'offline') return 'idle'
+  // Return the current status if it's typing or read
+  if (row.status === 'typing' || row.status === 'read') return row.status
 
-  const lastActivityMs = row.last_activity_at ? Date.parse(row.last_activity_at) : lastSeenMs
-  if (!Number.isFinite(lastActivityMs)) return 'idle'
-  if (nowMs - lastActivityMs > IDLE_STALE_MS) return 'idle'
+  // If offline, stay offline
+  if (row.status === 'offline') return 'offline'
 
   return 'online'
 }
@@ -87,14 +85,20 @@ export function aggregateSessions(rows: ActivitySessionRow[], nowMs: number): Ac
     return Number.isFinite(parsed) && nowMs - parsed <= ONLINE_STALE_MS
   })
 
-  const hasRecentIdle = rows.some((row) => {
-    if (row.status !== 'idle' || !row.last_seen_at) return false
+  const hasRecentTyping = rows.some((row) => {
+    if (row.status !== 'typing' || !row.last_seen_at) return false
+    const parsed = Date.parse(row.last_seen_at)
+    return Number.isFinite(parsed) && nowMs - parsed <= ONLINE_STALE_MS
+  })
+
+  const hasRecentRead = rows.some((row) => {
+    if (row.status !== 'read' || !row.last_seen_at) return false
     const parsed = Date.parse(row.last_seen_at)
     return Number.isFinite(parsed) && nowMs - parsed <= ONLINE_STALE_MS
   })
 
   const synthesized: ActivityAggregate = {
-    status: hasRecentOnline ? 'online' : hasRecentIdle ? 'idle' : 'offline',
+    status: hasRecentOnline ? 'online' : hasRecentTyping ? 'typing' : hasRecentRead ? 'read' : 'offline',
     last_seen_at: latestSeen,
     last_activity_at: latestActivity,
   }

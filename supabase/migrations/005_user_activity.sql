@@ -3,7 +3,7 @@
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.user_activity (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'offline' CHECK (status IN ('online', 'idle', 'offline')),
+  status TEXT NOT NULL DEFAULT 'offline' CHECK (status IN ('online', 'typing', 'read', 'offline')),
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_activity_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_page TEXT,

@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-export type ActivityStatus = 'online' | 'idle' | 'offline'
+export type ActivityStatus = 'online' | 'typing' | 'read' | 'offline'
 
 interface ActivityData {
   status: ActivityStatus
@@ -66,10 +66,10 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
       if (data.statuses && typeof data.statuses === 'object') {
         for (const [userId, statusData] of Object.entries(data.statuses)) {
           const typedData = statusData as { status?: string; last_seen_at?: string | null }
-          const status = typedData.status === 'online' || typedData.status === 'idle' || typedData.status === 'offline'
+          const status = typedData.status === 'online' || typedData.status === 'typing' || typedData.status === 'read' || typedData.status === 'offline'
             ? typedData.status
             : 'offline'
-          
+
           newStatuses.set(userId, {
             status,
             last_seen_at: typedData.last_seen_at || null,

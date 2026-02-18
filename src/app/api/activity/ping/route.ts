@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { aggregateSessions, type ActivitySessionRow, type ActivityStatus } from '@/lib/activity'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-const VALID_STATUSES = new Set<ActivityStatus>(['online', 'idle', 'offline'])
+const VALID_STATUSES = new Set<ActivityStatus>(['online', 'typing', 'read', 'offline'])
 
 function normalizeStatus(value: unknown): ActivityStatus {
   if (typeof value !== 'string') return 'online'

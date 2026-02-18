@@ -90,7 +90,8 @@ export default function UsersManagement({ currentUserId }: { currentUserId: stri
   function statusInfo(status?: string) {
     switch (status) {
       case 'online': return { label: 'En línea', dot: 'bg-emerald-500', text: 'text-emerald-600' }
-      case 'idle': return { label: 'Ausente', dot: 'bg-amber-500', text: 'text-amber-600' }
+      case 'typing': return { label: 'Escribiendo...', dot: 'bg-blue-500', text: 'text-blue-600' }
+      case 'read': return { label: 'Leído', dot: 'bg-purple-500', text: 'text-purple-600' }
       default: return { label: 'Desconectado', dot: 'bg-zinc-300', text: 'text-zinc-500' }
     }
   }
