@@ -6,6 +6,7 @@ import { useUIStore, type ToolStatus } from '@/store/ui-store'
 import MessageBubble from '@/components/chat/MessageBubble'
 import ChatInput from '@/components/chat/ChatInput'
 import DeepResearchProgress from '@/components/chat/DeepResearchProgress'
+import DeepResearchFloatingWindow from '@/components/chat/DeepResearchFloatingWindow'
 import { Loader2, Globe, Database, HardDrive, ArrowDown, ImagePlus, FlaskConical, FileText, BarChart3 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -38,6 +39,7 @@ export default function ChatArea() {
   const [showScrollBtn, setShowScrollBtn] = useState(false)
   const [thinkingIdx, setThinkingIdx] = useState(0)
   const [chatTransition, setChatTransition] = useState(false)
+  const [showResearchWindow, setShowResearchWindow] = useState(false)
   const prevConvIdRef = useRef<string | null>(null)
 
   const genericThinkingPhrases = useMemo<readonly string[]>(() => {
@@ -112,6 +114,13 @@ export default function ChatArea() {
       return () => clearInterval(interval)
     }
   }, [isStreamingHere, streamingContent, activePhraseList])
+
+  // Show research window when deep research is active and streaming
+  useEffect(() => {
+    if (deepResearch && isStreamingHere) {
+      setShowResearchWindow(true)
+    }
+  }, [deepResearch, isStreamingHere])
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -241,6 +250,12 @@ export default function ChatArea() {
       )}
 
       <ChatInput />
+
+      {/* Deep Research Floating Window */}
+      <DeepResearchFloatingWindow
+        isActive={showResearchWindow}
+        onClose={() => setShowResearchWindow(false)}
+      />
     </div>
   )
 }

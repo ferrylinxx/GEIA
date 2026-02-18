@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AIProvider, ModelConfig, DbConnection, DbSchemaTable, NetworkDrive, Banner } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import RolesManagement from './RolesManagement'
 import ToolsManagement from './ToolsManagement'
+import UserTokenUsage from './UserTokenUsage'
 import {
   ArrowLeft, Users, Bot, Plug, Trash2, Edit3, Plus, Eye, EyeOff,
   ArrowUp, ArrowDown, Shield, Loader2, Save, X, Check,
@@ -138,6 +139,8 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [saving, setSaving] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [uploadingAvatarForUser, setUploadingAvatarForUser] = useState<string | null>(null)
+  const [expandedUserTokens, setExpandedUserTokens] = useState<string | null>(null)
   const [openingDmUserId, setOpeningDmUserId] = useState<string | null>(null)
   const [chatViewerOpen, setChatViewerOpen] = useState(false)
   const [chatViewerUser, setChatViewerUser] = useState<UserRow | null>(null)
@@ -752,6 +755,37 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     if (res.ok) { setUsers(users.filter(u => u.id !== userId)); setConfirmDelete(null); showStatus('Usuario eliminado') }
     else showStatus('Error al eliminar')
     setSaving(false)
+  }
+
+  const handleUserAvatarUpload = async (userId: string, file: File) => {
+    setUploadingAvatarForUser(userId)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() || 'png'
+      const path = `${userId}/avatar_${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+
+      if (error) {
+        console.error('Upload error:', error)
+        showStatus('Error al subir avatar')
+        return
+      }
+
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+      const avatarUrl = urlData.publicUrl
+
+      // Update profile
+      await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', userId)
+
+      // Update local state
+      setUsers(users.map(u => u.id === userId ? { ...u, avatar_url: avatarUrl } : u))
+      showStatus('Avatar actualizado')
+    } catch (err) {
+      console.error('Avatar upload error:', err)
+      showStatus('Error al subir avatar')
+    } finally {
+      setUploadingAvatarForUser(null)
+    }
   }
 
   const createNewUser = async () => {
@@ -1811,13 +1845,14 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                 const isAdmin = (u.role || '').toLowerCase() === 'admin'
 
                 return (
-                <tr key={u.id} className="border-b border-zinc-100/70 hover:bg-white/40">
+                <React.Fragment key={u.id}>
+                <tr className="border-b border-zinc-100/70 hover:bg-white/40">
                   <td className="px-4 py-3">
                     {editingUser === u.id ? (
                       <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-2 py-1 border border-zinc-300 rounded text-sm" />
                     ) : (
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`relative h-10 w-10 rounded-full ${isAdmin ? 'admin-crown-wrap' : ''}`}>
+                        <div className={`relative h-10 w-10 rounded-full group ${isAdmin ? 'admin-crown-wrap' : ''}`}>
                           <div className={`h-full w-full rounded-full overflow-hidden bg-white flex items-center justify-center ${isAdmin ? 'admin-crown-ring' : 'ring-1 ring-zinc-200/80'}`}>
                             {u.avatar_url ? (
                               <img src={u.avatar_url} alt={u.name || u.email || 'Usuario'} className="w-full h-full object-cover" />
@@ -1830,6 +1865,24 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                               <Crown size={8} strokeWidth={2.2} />
                             </span>
                           )}
+                          {/* Upload avatar button */}
+                          <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                            {uploadingAvatarForUser === u.id ? (
+                              <Loader2 size={14} className="text-white animate-spin" />
+                            ) : (
+                              <Upload size={14} className="text-white" />
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingAvatarForUser === u.id}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleUserAvatarUpload(u.id, file)
+                              }}
+                            />
+                          </label>
                         </div>
                         <div className="min-w-0">
                           <p className="text-zinc-700 font-medium truncate">{u.name || 'Sin nombre'}</p>
@@ -1886,6 +1939,13 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                           >
                             <MessageSquare size={14} />
                           </button>
+                          <button
+                            onClick={() => setExpandedUserTokens(expandedUserTokens === u.id ? null : u.id)}
+                            className={`p-1.5 hover:bg-purple-50 rounded-lg ${expandedUserTokens === u.id ? 'text-purple-600 bg-purple-50' : 'text-zinc-400 hover:text-purple-600'}`}
+                            title="Ver consumo de tokens"
+                          >
+                            <Zap size={14} />
+                          </button>
                           <button onClick={() => startEditUser(u)} className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-400" title="Editar"><Edit3 size={14} /></button>
                           {confirmDelete === u.id ? (
                             <div className="flex items-center gap-1">
@@ -1900,6 +1960,21 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                     </div>
                   </td>
                 </tr>
+                {/* Fila expandible para mostrar consumo de tokens */}
+                {expandedUserTokens === u.id && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-3 bg-gradient-to-br from-purple-50/50 to-blue-50/50 border-t border-purple-100">
+                      <div className="max-w-2xl">
+                        <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                          <Zap size={16} className="text-purple-600" />
+                          Consumo de Tokens - {u.name || u.email}
+                        </h3>
+                        <UserTokenUsage userId={u.id} />
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
                 )
               })}
             </tbody>
@@ -1917,7 +1992,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               return (
                 <div key={u.id} className="p-4 hover:bg-white/40 transition-colors">
                   <div className="flex items-start gap-3 mb-3">
-                    <div className={`relative h-12 w-12 rounded-full shrink-0 ${isAdmin ? 'admin-crown-wrap' : ''}`}>
+                    <div className={`relative h-12 w-12 rounded-full shrink-0 group ${isAdmin ? 'admin-crown-wrap' : ''}`}>
                       <div className={`h-full w-full rounded-full overflow-hidden bg-white flex items-center justify-center ${isAdmin ? 'admin-crown-ring' : 'ring-2 ring-zinc-200/80'}`}>
                         {u.avatar_url ? (
                           <img src={u.avatar_url} alt={u.name || u.email || 'Usuario'} className="w-full h-full object-cover" />
@@ -1930,6 +2005,24 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                           <Crown size={8} strokeWidth={2.2} />
                         </span>
                       )}
+                      {/* Upload avatar button */}
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                        {uploadingAvatarForUser === u.id ? (
+                          <Loader2 size={16} className="text-white animate-spin" />
+                        ) : (
+                          <Upload size={16} className="text-white" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingAvatarForUser === u.id}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleUserAvatarUpload(u.id, file)
+                          }}
+                        />
+                      </label>
                     </div>
                     <div className="flex-1 min-w-0">
                       {editingUser === u.id ? (
@@ -1984,6 +2077,13 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                         >
                           <MessageSquare size={16} />
                         </button>
+                        <button
+                          onClick={() => setExpandedUserTokens(expandedUserTokens === u.id ? null : u.id)}
+                          className={`p-2 hover:bg-purple-50 rounded-lg ${expandedUserTokens === u.id ? 'text-purple-600 bg-purple-50' : 'text-zinc-400 hover:text-purple-600'}`}
+                          title="Ver tokens"
+                        >
+                          <Zap size={16} />
+                        </button>
                         <button onClick={() => startEditUser(u)} className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400" title="Editar">
                           <Edit3 size={16} />
                         </button>
@@ -2004,6 +2104,16 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                       </>
                     )}
                   </div>
+                  {/* Panel expandible de tokens en móvil */}
+                  {expandedUserTokens === u.id && (
+                    <div className="mt-3 p-3 bg-gradient-to-br from-purple-50/50 to-blue-50/50 rounded-lg border border-purple-100">
+                      <h4 className="text-xs font-semibold text-purple-900 mb-2 flex items-center gap-1.5">
+                        <Zap size={14} className="text-purple-600" />
+                        Consumo de Tokens
+                      </h4>
+                      <UserTokenUsage userId={u.id} />
+                    </div>
+                  )}
                 </div>
               )
             })}

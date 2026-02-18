@@ -554,9 +554,29 @@ export default function ChatInput() {
           const { done, value } = await reader.read()
           if (done) break
           const chunk = decoder.decode(value, { stream: true })
+
+          // Check for research events
+          const lines = chunk.split('\n')
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6))
+                if (eventData.type === 'research_event') {
+                  // Emit custom event for DeepResearchFloatingWindow
+                  window.dispatchEvent(new CustomEvent('research-event', {
+                    detail: eventData.data
+                  }))
+                  continue // Don't add to full content
+                }
+              } catch {
+                // Not a JSON event, treat as regular content
+              }
+            }
+          }
+
           full += chunk
-          // Strip title update signal from displayed content
-          setStreamingContent(full.replace('\n__TITLE_UPDATED__', ''))
+          // Strip title update signal and research events from displayed content
+          setStreamingContent(full.replace('\n__TITLE_UPDATED__', '').replace(/data: \{.*research_event.*\}\n\n/g, ''))
         }
         // If title was updated, reload sidebar conversations
         if (full.includes('__TITLE_UPDATED__')) {

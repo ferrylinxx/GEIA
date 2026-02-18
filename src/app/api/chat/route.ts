@@ -4056,6 +4056,20 @@ REGLAS OBLIGATORIAS:
   const encoder = new TextEncoder()
   let fullContent = ''
 
+  // Helper function to send research events via SSE
+  const sendResearchEvent = (type: string, message: string, data?: unknown, controller?: ReadableStreamDefaultController) => {
+    if (!controller) return
+    try {
+      const event = {
+        type: 'research_event',
+        data: { type, message, data, timestamp: Date.now() }
+      }
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+    } catch (err) {
+      console.error('[ResearchEvent] Failed to send event:', err)
+    }
+  }
+
   const stream = new ReadableStream({
     async start(controller) {
       const reader = openaiRes.body!.getReader()
@@ -4063,6 +4077,17 @@ REGLAS OBLIGATORIAS:
       let buffer = ''
 
       try {
+        // Send deep research events if applicable
+        if (deep_research && rankedWebSources.length > 0) {
+          sendResearchEvent('search', `Búsqueda inicial completada: ${rankedWebSources.length} fuentes encontradas`, { count: rankedWebSources.length }, controller)
+          sendResearchEvent('planning', `Análisis de ${rankedWebSources.length} fuentes en progreso`, undefined, controller)
+          sendResearchEvent('ranking', `Fuentes priorizadas y clasificadas`, { top_sources: rankedWebSources.slice(0, 5).map(s => s.title) }, controller)
+          if (deepResearchImages.length > 0) {
+            sendResearchEvent('images', `${deepResearchImages.length} imágenes relevantes seleccionadas`, { count: deepResearchImages.length }, controller)
+          }
+          sendResearchEvent('complete', 'Investigación profunda completada, generando respuesta...', undefined, controller)
+        }
+
         if (preResponseVisualPrefix) {
           controller.enqueue(encoder.encode(preResponseVisualPrefix))
         }
