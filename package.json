@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@langchain/textsplitters": "^1.0.1",
-    "@playwright/test": "^1.58.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@tailwindcss/typography": "^0.5.19",
@@ -27,7 +26,6 @@
     "pdf2json": "^4.0.2",
     "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.17.2",
-    "playwright": "^1.58.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-dropzone": "^15.0.0",

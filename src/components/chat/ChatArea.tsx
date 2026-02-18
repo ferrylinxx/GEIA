@@ -28,7 +28,6 @@ export default function ChatArea() {
     networkDriveRag,
     imageGeneration,
     deepResearch,
-    browserAgent,
     documentGeneration,
     spreadsheetAnalysis,
     selectedModel,
@@ -122,12 +121,12 @@ export default function ChatArea() {
     }
   }, [isStreamingHere, streamingContent, activePhraseList])
 
-  // Show research window when deep research or browser agent is active and streaming
+  // Show research window when deep research is active and streaming
   useEffect(() => {
-    if ((deepResearch || browserAgent) && isStreamingHere) {
+    if (deepResearch && isStreamingHere) {
       setShowResearchWindow(true)
     }
-  }, [deepResearch, browserAgent, isStreamingHere])
+  }, [deepResearch, isStreamingHere])
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

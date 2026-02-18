@@ -3,8 +3,9 @@
 import { useChatStore } from '@/store/chat-store'
 import { useUIStore } from '@/store/ui-store'
 import { MODELS } from '@/lib/types'
-import { PanelLeft, Search, Settings, BookOpen, Quote, User, Shield, Loader2, Star, Volume2, VolumeX, Check, Crown, X, FolderOpen } from 'lucide-react'
+import { PanelLeft, Search, Settings, BookOpen, Quote, User, Shield, Loader2, Star, Volume2, VolumeX, Check, Crown, X, FolderOpen, Bell, BellOff } from 'lucide-react'
 import { useState, useRef, useEffect, type CSSProperties } from 'react'
+import { useBrowserNotifications } from '@/hooks/use-browser-notifications'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/i18n/LanguageContext'
@@ -25,6 +26,7 @@ export default function Header() {
   const { t } = useTranslation()
   const { sidebarOpen, setSidebarOpen, selectedModel, setSelectedModel, focusMode, setFocusMode, ragMode, setRagMode, citeMode, setCiteMode } = useChatStore()
   const { setSearchOpen, setSettingsOpen, soundEnabled, setSoundEnabled } = useUIStore()
+  const { enabled: notificationsEnabled, toggleNotifications, isSupported: notificationsSupported } = useBrowserNotifications()
   const [modelOpen, setModelOpen] = useState(false)
   const [modelQuery, setModelQuery] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -313,6 +315,12 @@ export default function Header() {
         aria-label={soundEnabled ? t.header.disableSound : t.header.enableSound} title={soundEnabled ? t.header.soundOn : t.header.soundOff}>
         {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
       </button>
+      {notificationsSupported && (
+        <button onClick={toggleNotifications} className={`p-2 md:p-1.5 rounded-lg transition-colors ${notificationsEnabled ? 'text-blue-500 hover:bg-blue-50' : 'text-zinc-400 hover:bg-zinc-100'}`}
+          aria-label={notificationsEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones'} title={notificationsEnabled ? 'Notificaciones activadas' : 'Notificaciones desactivadas'}>
+          {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+        </button>
+      )}
 
       <div className="relative" ref={userRef}>
         <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="relative p-1.5 md:p-1 hover:bg-zinc-100 rounded-full transition-colors" aria-label={t.header.userMenu}>

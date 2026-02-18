@@ -12,6 +12,7 @@ import { useTranslation } from '@/i18n/LanguageContext'
 import { coerceMimeType, sanitizeFilename } from '@/lib/file-utils'
 import { AUTO_RAG_INGEST_ON_UPLOAD } from '@/lib/rag-ingest-config'
 import { useProjectContext } from '@/hooks/useProjectContext'
+import { useBrowserNotifications } from '@/hooks/use-browser-notifications'
 import SmartSuggestions from './SmartSuggestions'
 import FollowUpSuggestions from './FollowUpSuggestions'
 
@@ -46,7 +47,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     networkDriveRag: true,
     imageGeneration: true,
     deepResearch: true,
-    browserAgent: true,
     documentGeneration: true,
     spreadsheetAnalysis: true,
     codeInterpreter: true,
@@ -69,13 +69,13 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     ragMode, citeMode, webSearch, setWebSearch, dbQuery, setDbQuery,
     networkDriveRag, setNetworkDriveRag, imageGeneration, setImageGeneration,
     deepResearch, setDeepResearch, researchMode, setResearchMode,
-    browserAgent, setBrowserAgent,
     documentGeneration, setDocumentGeneration,
     spreadsheetAnalysis, setSpreadsheetAnalysis,
     codeInterpreter, setCodeInterpreter,
     addMessage, loadMessages, loadConversations,
   } = useChatStore()
   const { setToolStatus, openFilePreview, soundEnabled, addToast } = useUIStore()
+  const { showNotification } = useBrowserNotifications()
 
   const revokeAttachmentPreviews = useCallback((items: PendingAttachment[]) => {
     for (const item of items) {
@@ -315,7 +315,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     let autoDbQuery = dbQuery
     let autoNetworkRag = networkDriveRag
     let autoDeepResearch = deepResearch
-    let autoBrowserAgent = browserAgent
     let autoDocumentGeneration = documentGeneration
     let autoSpreadsheetAnalysis = spreadsheetAnalysis
 
@@ -396,20 +395,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       autoDeepResearch = true
       autoWebSearch = true
       console.log('[Auto-Tool] ðŸ”¬ Deep research activated by keyword')
-    }
-
-    // Browser Agent keywords
-    if (!autoBrowserAgent && (
-      lowerText.includes('navega a') || lowerText.includes('abre la pagina') ||
-      lowerText.includes('visita la web') || lowerText.includes('entra en') ||
-      lowerText.includes('accede a la web') || lowerText.includes('abre el navegador') ||
-      lowerText.includes('browse to') || lowerText.includes('navigate to') ||
-      lowerText.includes('open browser') || lowerText.includes('visit website') ||
-      lowerText.includes('captura de pantalla') || lowerText.includes('screenshot') ||
-      lowerText.includes('navega por') || lowerText.includes('explora la web')
-    )) {
-      autoBrowserAgent = true
-      console.log('[Auto-Tool] 🌐 Browser Agent activated by keyword')
     }
 
     // Document generation keywords - DISABLED (user request)
@@ -585,7 +570,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
             network_drive_rag: autoNetworkRag, image_generation: autoImageGen,
             deep_research: autoDeepResearch,
             research_mode: researchMode,
-            browser_agent: autoBrowserAgent,
             document_generation: autoDocumentGeneration,
             spreadsheet_analysis: autoSpreadsheetAnalysis,
             attachments: attachmentsPayload.map(a => a.file_id),
@@ -646,7 +630,13 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
         toolCycleIntervalRef.current = null
       }
       setToolStatus('idle')
-      if (completed && !wasAborted) playNotificationSound()
+      if (completed && !wasAborted) {
+        playNotificationSound()
+        showNotification('GEIA - Respuesta completada', {
+          body: 'Tu asistente ha terminado de responder',
+          tag: 'geia-response-complete',
+        })
+      }
       // Reload silently before clearing streamed content to avoid visual flicker.
       if (convId) await loadMessages(convId, { silent: true })
       setIsStreaming(false)
@@ -654,7 +644,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       setStreamingContent('')
       setStreamAbortController(null)
     }
-  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, router, setStreamAbortController, researchMode, projectContextId])
+  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId])
 
   const handleStop = () => {
     abortStreaming()
@@ -783,7 +773,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const activeToolsCount = [webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, browserAgent, documentGeneration, spreadsheetAnalysis, codeInterpreter].filter(Boolean).length
+  const activeToolsCount = [webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, codeInterpreter].filter(Boolean).length
   const inputPlaceholder = isListening
     ? t.chatInput.listening
     : projectName
@@ -997,14 +987,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                     {deepResearch && <Check size={14} className="ml-auto text-amber-500" />}
                   </button>
                 )}
-                {toolPermissions.browserAgent && (
-                  <button onClick={() => { setBrowserAgent(!browserAgent) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${browserAgent ? 'bg-purple-50 text-purple-700 shadow-sm shadow-purple-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-purple-50/80 hover:to-purple-50/30'}`}>
-                    <Chrome size={16} className={browserAgent ? 'text-purple-500' : 'text-purple-400'} />
-                    {t.chatInput.browserAgent}
-                    {browserAgent && <Check size={14} className="ml-auto text-purple-500" />}
-                  </button>
-                )}
                 {toolPermissions.documentGeneration && (
                   <button onClick={() => { setDocumentGeneration(!documentGeneration) }}
                     className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${documentGeneration ? 'bg-sky-50 text-sky-700 shadow-sm shadow-sky-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-sky-50/80 hover:to-sky-50/30'}`}>
@@ -1176,18 +1158,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                   <FlaskConical size={18} className={deepResearch ? 'text-amber-600' : 'text-amber-500'} />
                   {t.chatInput.deepResearch}
                   {deepResearch && <Check size={16} className="ml-auto text-amber-600" />}
-                </button>
-              )}
-              {toolPermissions.browserAgent && (
-                <button
-                  onClick={() => { setBrowserAgent(!browserAgent) }}
-                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                    browserAgent ? 'bg-purple-50/80 text-purple-700' : 'text-zinc-800 hover:bg-white/60'
-                  }`}
-                >
-                  <Chrome size={18} className={browserAgent ? 'text-purple-600' : 'text-purple-500'} />
-                  {t.chatInput.browserAgent}
-                  {browserAgent && <Check size={16} className="ml-auto text-purple-600" />}
                 </button>
               )}
               {toolPermissions.documentGeneration && (

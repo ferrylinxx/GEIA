@@ -44,9 +44,9 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Liquid Glass sin brillos */}
+        {/* Card de login */}
         <div className="
-          relative rounded-[2.75rem] overflow-hidden isolate
+          relative rounded-3xl md:rounded-[2.75rem] overflow-hidden isolate
           bg-white/[0.052] backdrop-blur-3xl saturate-[1.92] brightness-[1.035] contrast-[1.07]
           border border-white/[0.035]
           shadow-[0_55px_130px_-45px_rgba(0,0,0,0.72),0_18px_55px_-18px_rgba(0,0,0,0.38),inset_0_4px_3px_rgba(0,0,0,0.18),inset_0_-4px_3px_rgba(0,0,0,0.18),inset_7px_7px_14px_rgba(0,0,0,0.22),inset_-7px_-7px_16px_rgba(0,0,0,0.22)]
@@ -70,9 +70,22 @@ export default function LoginPage() {
             <div className="absolute inset-0 bg-red-300/7 blur-[1px] translate-x-[0.7px] translate-y-[0.7px]" />
           </div>
 
+          {/* Badge pequeña arriba a la derecha: V3.0.0 */}
+          <div className="
+            absolute top-4 right-4 z-50
+            rounded-2xl px-4 py-2
+            bg-white/[0.06] backdrop-blur-3xl
+            border border-white/[0.04]
+            shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.15)]
+          ">
+            <span className="text-white/80 text-xs md:text-sm font-medium tracking-wide">
+              V3.0.0
+            </span>
+          </div>
+
           <div className="p-8 md:p-10 relative z-40">
             <div className="text-center mb-6">
-              <div className="relative mx-auto w-64 h-28 md:w-80 md:h-36">
+              <div className="relative mx-auto w-64 h-28 md:w-80 md:h-36 mb-3">
                 <Image
                   src="https://tecnofgb.com/wp-content/uploads/2026/02/logo.png"
                   alt="GEIA Logo"
@@ -81,8 +94,24 @@ export default function LoginPage() {
                   priority
                 />
               </div>
-              <p className="text-zinc-300/80 mt-2 text-base md:text-lg font-light tracking-wide">
-                Inicia sesión para continuar
+
+              {/* Texto con efecto Liquid Glass + pequeño 3D */}
+              <h1 className="
+                text-3xl md:text-4xl font-semibold
+                bg-clip-text text-transparent
+                bg-gradient-to-br from-white/45 to-white/10
+                text-shadow: 
+                  0 1px 1px rgba(0,0,0,0.3),
+                  0 2px 2px rgba(0,0,0,0.25),
+                  0 3px 3px rgba(0,0,0,0.2),
+                  0 4px 4px rgba(0,0,0,0.15),
+                  0 5px 8px rgba(0,0,0,0.1)
+              ">
+                Inicia Sesión en GIA
+              </h1>
+
+              <p className="text-zinc-400 mt-1 text-sm md:text-base font-light">
+                Ingresa tus credenciales para continuar
               </p>
             </div>
 
@@ -97,15 +126,16 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
+                <label htmlFor="email" className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
                   Email
                 </label>
                 <input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="
-                    w-full px-5 py-4 rounded-2xl
+                    w-full px-6 py-4.5 rounded-2xl
                     bg-white/[0.04] border border-white/[0.06]
                     text-white placeholder-zinc-400/60 text-base
                     focus:outline-none focus:border-white/16 focus:ring-2 focus:ring-indigo-400/16 focus:bg-white/[0.055]
@@ -119,16 +149,17 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
+                <label htmlFor="password" className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
                   Contraseña
                 </label>
                 <div className="relative">
                   <input
+                    id="password"
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="
-                      w-full px-5 py-4 rounded-2xl pr-12
+                      w-full px-6 py-4.5 rounded-2xl pr-14
                       bg-white/[0.04] border border-white/[0.06]
                       text-white placeholder-zinc-400/60 text-base
                       focus:outline-none focus:border-white/16 focus:ring-2 focus:ring-indigo-400/16 focus:bg-white/[0.055]
@@ -141,7 +172,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400/65 hover:text-zinc-200 transition-colors duration-300"
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400/65 hover:text-zinc-200 transition-colors duration-300"
                     aria-label={showPass ? "Ocultar" : "Mostrar"}
                   >
                     {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -153,7 +184,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 className="
-                  w-full py-4 rounded-2xl mt-3
+                  w-full py-4.5 rounded-2xl mt-3
                   bg-gradient-to-r from-blue-600/75 via-indigo-600/75 to-violet-600/75
                   hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500
                   disabled:opacity-45 disabled:cursor-not-allowed
@@ -170,19 +201,12 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-8 text-center text-sm md:text-base text-zinc-400/70 space-y-3">
-              <p>
-                ¿No tienes cuenta?{' '}
-                <Link href="/auth/register" className="text-indigo-300/85 hover:text-indigo-200 font-medium transition-colors">
-                  Regístrate
-                </Link>
-              </p>
-              <p>
-                <Link href="/auth/reset" className="text-indigo-300/85 hover:text-indigo-200 transition-colors">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </p>
-            </div>
+            <p className="mt-8 text-center text-sm md:text-base text-zinc-400/70">
+              ¿No tienes cuenta?{' '}
+              <Link href="/auth/register" className="text-indigo-300/85 hover:text-indigo-200 font-medium transition-colors">
+                Regístrate
+              </Link>
+            </p>
           </div>
         </div>
       </div>
