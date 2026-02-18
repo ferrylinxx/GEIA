@@ -3976,6 +3976,7 @@ REGLAS OBLIGATORIAS:
       ? finalMessages.map(m => m.role === 'system' ? { ...m, role: 'developer' } : m)
       : finalMessages,
     stream: true,
+    stream_options: { include_usage: true }, // Include token usage in stream
     ...tokenParam,
     ...(isReasoningModel ? {} : { temperature: 0.7 }),
   }

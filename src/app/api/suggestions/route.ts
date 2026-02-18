@@ -26,11 +26,11 @@ export async function POST(req: NextRequest) {
 
     // Build context for the AI
     const contextMessages: Message[] = [
-      { role: 'system', content: 'Eres un asistente que genera sugerencias de seguimiento para conversaciones. Genera exactamente 3 preguntas o sugerencias breves (máximo 10 palabras cada una) que el usuario podría querer hacer a continuación basándote en el contexto de la conversación. Las sugerencias deben ser relevantes, específicas y útiles. Responde SOLO con un array JSON de strings, sin texto adicional.' },
+      { role: 'system', content: 'Eres un asistente que genera sugerencias de seguimiento personales y conversacionales. Genera exactamente 3 preguntas breves (máximo 8 palabras cada una) dirigidas directamente al usuario usando "tú" o formas conversacionales como "¿Quieres que...?", "¿Te gustaría...?", "¿Hacemos...?", "¿Necesitas...?", "¿Te ayudo con...?". Las preguntas deben ser específicas al contexto de la conversación y sentirse naturales y cercanas. Responde SOLO con un array JSON de strings, sin texto adicional.' },
       ...context.map((m: Message) => ({ role: m.role, content: m.content })),
       { role: 'user', content: user_message },
       { role: 'assistant', content: assistant_message.substring(0, 1000) },
-      { role: 'user', content: 'Genera 3 sugerencias de seguimiento breves y relevantes en español.' }
+      { role: 'user', content: 'Genera 3 preguntas personales y conversacionales basadas en el contexto.' }
     ]
 
     // Call OpenAI API
@@ -75,18 +75,18 @@ export async function POST(req: NextRequest) {
       console.error('Failed to parse suggestions:', parseError)
       // Fallback suggestions
       suggestions = [
-        '¿Puedes explicar más sobre esto?',
-        '¿Qué otros aspectos debería considerar?',
-        '¿Tienes ejemplos adicionales?'
+        '¿Quieres que profundice más?',
+        '¿Te ayudo con algo más?',
+        '¿Necesitas ejemplos?'
       ]
     }
 
     // Ensure we have exactly 3 suggestions
     if (suggestions.length < 3) {
       const fallbacks = [
-        '¿Puedes profundizar en este tema?',
-        '¿Hay algo más que deba saber?',
-        '¿Cómo puedo aplicar esto?'
+        '¿Te explico más detalles?',
+        '¿Hacemos algo con esto?',
+        '¿Quieres que continúe?'
       ]
       while (suggestions.length < 3) {
         suggestions.push(fallbacks[suggestions.length] || '¿Algo más?')
