@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Minimize2, Maximize2, Search, Brain, BarChart3, CheckCircle2, Loader2, GripVertical } from 'lucide-react'
+import { X, Minimize2, Maximize2, Search, Brain, BarChart3, CheckCircle2, Loader2, GripVertical, Globe, FileText, Sparkles, Link2 } from 'lucide-react'
 
 interface ResearchEvent {
-  type: 'search' | 'planning' | 'followup' | 'ranking' | 'images' | 'complete'
+  type: 'search' | 'planning' | 'followup' | 'ranking' | 'images' | 'complete' | 'web_access' | 'analyzing' | 'extracting'
   message: string
   data?: unknown
   timestamp: number
+  url?: string
+  progress?: number
 }
 
 interface DeepResearchFloatingWindowProps {
@@ -101,6 +103,9 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
       case 'ranking': return <BarChart3 size={14} className="text-orange-500" />
       case 'images': return <Search size={14} className="text-pink-500" />
       case 'complete': return <CheckCircle2 size={14} className="text-emerald-500" />
+      case 'web_access': return <Globe size={14} className="text-cyan-500" />
+      case 'analyzing': return <Sparkles size={14} className="text-violet-500 animate-pulse" />
+      case 'extracting': return <FileText size={14} className="text-amber-500" />
       default: return <Loader2 size={14} className="text-zinc-400 animate-spin" />
     }
   }
@@ -113,6 +118,9 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
       case 'ranking': return 'bg-orange-50 border-orange-200 text-orange-700'
       case 'images': return 'bg-pink-50 border-pink-200 text-pink-700'
       case 'complete': return 'bg-emerald-50 border-emerald-200 text-emerald-700'
+      case 'web_access': return 'bg-cyan-50 border-cyan-200 text-cyan-700'
+      case 'analyzing': return 'bg-violet-50 border-violet-200 text-violet-700'
+      case 'extracting': return 'bg-amber-50 border-amber-200 text-amber-700'
       default: return 'bg-zinc-50 border-zinc-200 text-zinc-700'
     }
   }
@@ -170,13 +178,40 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
               {events.map((event, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg border ${getEventColor(event.type)} text-xs`}
+                  className={`p-3 rounded-lg border ${getEventColor(event.type)} text-xs animate-in fade-in slide-in-from-left-2 duration-200`}
                 >
                   <div className="flex items-start gap-2">
                     <div className="mt-0.5">{getEventIcon(event.type)}</div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium">{event.message}</p>
-                      {event.data && (
+
+                      {/* Show URL if present */}
+                      {event.url && (
+                        <a
+                          href={event.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 mt-1 text-[10px] opacity-70 hover:opacity-100 hover:underline"
+                        >
+                          <Link2 size={10} />
+                          <span className="truncate">{event.url}</span>
+                        </a>
+                      )}
+
+                      {/* Show progress bar if present */}
+                      {event.progress !== undefined && (
+                        <div className="mt-2">
+                          <div className="w-full bg-white/50 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-full bg-current transition-all duration-300"
+                              style={{ width: `${event.progress}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] opacity-50 mt-0.5">{event.progress}%</p>
+                        </div>
+                      )}
+
+                      {event.data && !event.url && !event.progress && (
                         <pre className="mt-1 text-[10px] opacity-70 overflow-x-auto">
                           {JSON.stringify(event.data, null, 2)}
                         </pre>

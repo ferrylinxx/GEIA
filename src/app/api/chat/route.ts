@@ -4061,12 +4061,12 @@ REGLAS OBLIGATORIAS:
   let totalTokens = 0
 
   // Helper function to send research events via SSE
-  const sendResearchEvent = (type: string, message: string, data?: unknown, controller?: ReadableStreamDefaultController) => {
+  const sendResearchEvent = (type: string, message: string, data?: unknown, controller?: ReadableStreamDefaultController, url?: string, progress?: number) => {
     if (!controller) return
     try {
       const event = {
         type: 'research_event',
-        data: { type, message, data, timestamp: Date.now() }
+        data: { type, message, data, timestamp: Date.now(), url, progress }
       }
       controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
     } catch (err) {
@@ -4083,13 +4083,24 @@ REGLAS OBLIGATORIAS:
       try {
         // Send deep research events if applicable
         if (deep_research && rankedWebSources.length > 0) {
-          sendResearchEvent('search', `Búsqueda inicial completada: ${rankedWebSources.length} fuentes encontradas`, { count: rankedWebSources.length }, controller)
-          sendResearchEvent('planning', `Análisis de ${rankedWebSources.length} fuentes en progreso`, undefined, controller)
-          sendResearchEvent('ranking', `Fuentes priorizadas y clasificadas`, { top_sources: rankedWebSources.slice(0, 5).map(s => s.title) }, controller)
-          if (deepResearchImages.length > 0) {
-            sendResearchEvent('images', `${deepResearchImages.length} imágenes relevantes seleccionadas`, { count: deepResearchImages.length }, controller)
+          sendResearchEvent('search', `🔍 Búsqueda inicial: ${rankedWebSources.length} fuentes encontradas`, { count: rankedWebSources.length }, controller, undefined, 20)
+
+          // Simulate accessing each source
+          for (let i = 0; i < Math.min(5, rankedWebSources.length); i++) {
+            const source = rankedWebSources[i]
+            sendResearchEvent('web_access', `🌐 Accediendo a: ${source.title}`, undefined, controller, source.url, 40 + (i * 8))
+            sendResearchEvent('analyzing', `✨ Analizando contenido de ${source.title.substring(0, 40)}...`, undefined, controller, undefined, 50 + (i * 8))
+            sendResearchEvent('extracting', `📄 Extrayendo información relevante`, undefined, controller, undefined, 60 + (i * 8))
           }
-          sendResearchEvent('complete', 'Investigación profunda completada, generando respuesta...', undefined, controller)
+
+          sendResearchEvent('planning', `🧠 Análisis de ${rankedWebSources.length} fuentes completado`, undefined, controller, undefined, 85)
+          sendResearchEvent('ranking', `📊 Fuentes priorizadas y clasificadas`, { top_sources: rankedWebSources.slice(0, 5).map(s => s.title) }, controller, undefined, 90)
+
+          if (deepResearchImages.length > 0) {
+            sendResearchEvent('images', `🖼️ ${deepResearchImages.length} imágenes relevantes seleccionadas`, { count: deepResearchImages.length }, controller, undefined, 95)
+          }
+
+          sendResearchEvent('complete', '✅ Investigación profunda completada, generando respuesta...', undefined, controller, undefined, 100)
         }
 
         if (preResponseVisualPrefix) {

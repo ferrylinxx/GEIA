@@ -167,7 +167,7 @@ export default function ConversationItem({ conversation, active }: Props) {
         </button>
 
         {menuOpen && (
-          <div className="dropdown-animated absolute right-0 top-full mt-1 bg-white/95 backdrop-blur-lg border border-zinc-100 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.08)] py-1.5 z-50 min-w-[170px]">
+          <div className="dropdown-animated absolute right-0 top-full mt-1 bg-white backdrop-blur-lg border border-zinc-200 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] py-1.5 z-[9999] min-w-[170px]">
             <button onClick={() => { setRenaming(true); setMenuOpen(false) }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50/50 flex items-center gap-2 text-zinc-600 transition-colors rounded-lg mx-0.5" style={{width: 'calc(100% - 4px)'}}>
               <Pencil size={12} className="text-blue-500" /> {t.conversation.rename}
             </button>

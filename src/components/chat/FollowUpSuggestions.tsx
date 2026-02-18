@@ -111,16 +111,17 @@ export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSugg
 
   return (
     <div className="mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="relative p-2.5 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-lg overflow-hidden">
-        {/* Liquid glass effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/30 via-purple-50/20 to-pink-50/30 pointer-events-none" />
+      <div className="relative p-2 rounded-2xl bg-white/20 backdrop-blur-2xl border border-white/40 shadow-[0_8px_32px_rgba(99,102,241,0.08)] overflow-hidden">
+        {/* Enhanced liquid glass effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/20 via-purple-50/10 to-pink-50/15 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
 
         <div className="relative flex items-start gap-2">
-          <Sparkles size={14} className="text-indigo-500 mt-0.5 shrink-0" />
+          <Sparkles size={13} className="text-indigo-400/80 mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             {loading ? (
-              <div className="flex items-center gap-2 text-[11px] text-indigo-600">
-                <Loader2 size={12} className="animate-spin" />
+              <div className="flex items-center gap-2 text-[11px] text-indigo-500/80">
+                <Loader2 size={11} className="animate-spin" />
                 <span>Pensando...</span>
               </div>
             ) : (
@@ -132,7 +133,7 @@ export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSugg
                       onSelectSuggestion(suggestion)
                       setVisible(false)
                     }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/70 backdrop-blur-sm border border-indigo-200/50 text-[11px] text-indigo-700 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all text-left font-medium"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/30 backdrop-blur-md border border-indigo-200/30 text-[11px] text-indigo-700/90 hover:bg-white/50 hover:border-indigo-300/50 hover:shadow-lg hover:shadow-indigo-100/20 transition-all text-left font-medium"
                   >
                     <span>{suggestion}</span>
                   </button>
@@ -142,10 +143,10 @@ export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSugg
           </div>
           <button
             onClick={() => setVisible(false)}
-            className="p-0.5 rounded-full text-indigo-400 hover:text-indigo-600 hover:bg-white/50 transition-colors shrink-0"
+            className="p-0.5 rounded-full text-indigo-400/70 hover:text-indigo-600 hover:bg-white/30 transition-colors shrink-0"
             aria-label="Cerrar sugerencias"
           >
-            <Sparkles size={12} />
+            <Sparkles size={11} />
           </button>
         </div>
       </div>
