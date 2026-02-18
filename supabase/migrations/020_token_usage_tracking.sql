@@ -22,24 +22,16 @@ CREATE INDEX IF NOT EXISTS idx_token_usage_created_at ON public.token_usage(crea
 CREATE INDEX IF NOT EXISTS idx_token_usage_conversation_id ON public.token_usage(conversation_id);
 
 -- Vista agregada para estadísticas por usuario
+-- Nota: stats_by_model removido debido a limitación de PostgreSQL con agregados anidados
 CREATE OR REPLACE VIEW public.user_token_stats AS
-SELECT 
+SELECT
   user_id,
   COUNT(*) as total_requests,
   SUM(prompt_tokens) as total_prompt_tokens,
   SUM(completion_tokens) as total_completion_tokens,
   SUM(total_tokens) as total_tokens,
   SUM(cost_usd) as total_cost_usd,
-  MAX(created_at) as last_usage_at,
-  -- Estadísticas por modelo
-  jsonb_object_agg(
-    model,
-    jsonb_build_object(
-      'requests', COUNT(*),
-      'tokens', SUM(total_tokens),
-      'cost', SUM(cost_usd)
-    )
-  ) FILTER (WHERE model IS NOT NULL) as stats_by_model
+  MAX(created_at) as last_usage_at
 FROM public.token_usage
 GROUP BY user_id;
 
