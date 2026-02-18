@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FileAttachment } from '@/lib/types'
 import { useUIStore, type ToolStatus } from '@/store/ui-store'
 import { trackEvent } from '@/lib/analytics'
-import { Send, Paperclip, X, Square, Loader2, Globe, Database, HardDrive, Plus, ImagePlus, FlaskConical, Mic, MicOff, Volume2, VolumeX, Eye, FileImage, FileText, Check, BarChart3, FolderOpen, Code2 } from 'lucide-react'
+import { Send, Paperclip, X, Square, Loader2, Globe, Database, HardDrive, Plus, ImagePlus, FlaskConical, Mic, MicOff, Volume2, VolumeX, Eye, FileImage, FileText, Check, BarChart3, FolderOpen, Code2, Chrome } from 'lucide-react'
 import { useTranslation } from '@/i18n/LanguageContext'
 import { coerceMimeType, sanitizeFilename } from '@/lib/file-utils'
 import { AUTO_RAG_INGEST_ON_UPLOAD } from '@/lib/rag-ingest-config'
@@ -46,6 +46,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     networkDriveRag: true,
     imageGeneration: true,
     deepResearch: true,
+    browserAgent: true,
     documentGeneration: true,
     spreadsheetAnalysis: true,
     codeInterpreter: true,
@@ -68,6 +69,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     ragMode, citeMode, webSearch, setWebSearch, dbQuery, setDbQuery,
     networkDriveRag, setNetworkDriveRag, imageGeneration, setImageGeneration,
     deepResearch, setDeepResearch, researchMode, setResearchMode,
+    browserAgent, setBrowserAgent,
     documentGeneration, setDocumentGeneration,
     spreadsheetAnalysis, setSpreadsheetAnalysis,
     codeInterpreter, setCodeInterpreter,
@@ -764,7 +766,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const activeToolsCount = [webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, codeInterpreter].filter(Boolean).length
+  const activeToolsCount = [webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, browserAgent, documentGeneration, spreadsheetAnalysis, codeInterpreter].filter(Boolean).length
   const inputPlaceholder = isListening
     ? t.chatInput.listening
     : projectName
@@ -881,6 +883,12 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                 <button onClick={() => setDeepResearch(false)} className="ml-0.5 hover:text-amber-800"><X size={10} /></button>
               </span>
             )}
+            {browserAgent && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 bg-purple-50 text-purple-600 border border-purple-100 rounded-full">
+                <Chrome size={10} /> {t.chatInput.browserAgent}
+                <button onClick={() => setBrowserAgent(false)} className="ml-0.5 hover:text-purple-800"><X size={10} /></button>
+              </span>
+            )}
             {documentGeneration && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 bg-sky-50 text-sky-600 border border-sky-100 rounded-full">
                 <FileText size={10} /> {t.chatInput.doc}
@@ -970,6 +978,14 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                     <FlaskConical size={16} className={deepResearch ? 'text-amber-500' : 'text-amber-400'} />
                     {t.chatInput.deepResearch}
                     {deepResearch && <Check size={14} className="ml-auto text-amber-500" />}
+                  </button>
+                )}
+                {toolPermissions.browserAgent && (
+                  <button onClick={() => { setBrowserAgent(!browserAgent) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${browserAgent ? 'bg-purple-50 text-purple-700 shadow-sm shadow-purple-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-purple-50/80 hover:to-purple-50/30'}`}>
+                    <Chrome size={16} className={browserAgent ? 'text-purple-500' : 'text-purple-400'} />
+                    {t.chatInput.browserAgent}
+                    {browserAgent && <Check size={14} className="ml-auto text-purple-500" />}
                   </button>
                 )}
                 {toolPermissions.documentGeneration && (

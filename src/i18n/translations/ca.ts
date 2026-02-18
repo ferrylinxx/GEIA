@@ -96,6 +96,7 @@ export const ca: TranslationKeys = {
     networkDrive: 'Unitat de Xarxa',
     generateImage: 'Generar Imatge',
     deepResearch: 'Deep Research',
+    browserAgent: 'Navegador Autònom',
     send: 'Enviar',
     stop: 'Aturar',
     speak: 'Parlar (microfon)',

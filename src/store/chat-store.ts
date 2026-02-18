@@ -23,6 +23,7 @@ interface ChatState {
   imageGeneration: boolean
   deepResearch: boolean
   researchMode: 'standard' | 'exhaustive'
+  browserAgent: boolean
   documentGeneration: boolean
   ocrMode: boolean
   spreadsheetAnalysis: boolean
@@ -43,6 +44,7 @@ interface ChatState {
   setImageGeneration: (enabled: boolean) => void
   setDeepResearch: (enabled: boolean) => void
   setResearchMode: (mode: 'standard' | 'exhaustive') => void
+  setBrowserAgent: (enabled: boolean) => void
   setDocumentGeneration: (enabled: boolean) => void
   setOcrMode: (enabled: boolean) => void
   setSpreadsheetAnalysis: (enabled: boolean) => void
@@ -96,6 +98,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   imageGeneration: false,
   deepResearch: false,
   researchMode: 'standard',
+  browserAgent: false,
   documentGeneration: false,
   ocrMode: false,
   spreadsheetAnalysis: false,
@@ -118,6 +121,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setImageGeneration: (enabled) => set({ imageGeneration: enabled }),
   setDeepResearch: (enabled) => set({ deepResearch: enabled }),
   setResearchMode: (mode) => set({ researchMode: mode }),
+  setBrowserAgent: (enabled) => set({ browserAgent: enabled }),
   setDocumentGeneration: (enabled) => set({ documentGeneration: enabled }),
   setOcrMode: (enabled) => set({ ocrMode: enabled }),
   setSpreadsheetAnalysis: (enabled) => set({ spreadsheetAnalysis: enabled }),

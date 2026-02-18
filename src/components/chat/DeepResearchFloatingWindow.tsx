@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Minimize2, Maximize2, Search, Brain, BarChart3, CheckCircle2, Loader2, GripVertical, Globe, FileText, Sparkles, Link2 } from 'lucide-react'
+import { X, Minimize2, Maximize2, Search, Brain, BarChart3, CheckCircle2, Loader2, GripVertical, Globe, FileText, Sparkles, Link2, Camera, Chrome } from 'lucide-react'
 
 interface ResearchEvent {
-  type: 'search' | 'planning' | 'followup' | 'ranking' | 'images' | 'complete' | 'web_access' | 'analyzing' | 'extracting'
+  type: 'search' | 'planning' | 'followup' | 'ranking' | 'images' | 'complete' | 'web_access' | 'analyzing' | 'extracting' | 'browser_init' | 'browser_close' | 'browser_error' | 'screenshot'
   message: string
   data?: unknown
   timestamp: number
   url?: string
   progress?: number
+  screenshot?: string
 }
 
 interface DeepResearchFloatingWindowProps {
@@ -35,11 +36,14 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
   // Listen for research events from SSE
   useEffect(() => {
     const handleResearchEvent = (event: CustomEvent) => {
-      const { type, message, data } = event.detail
+      const { type, message, data, url, progress, screenshot } = event.detail
       setEvents(prev => [...prev, {
         type,
         message,
         data,
+        url,
+        progress,
+        screenshot,
         timestamp: Date.now()
       }])
     }
@@ -106,6 +110,10 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
       case 'web_access': return <Globe size={14} className="text-cyan-500" />
       case 'analyzing': return <Sparkles size={14} className="text-violet-500 animate-pulse" />
       case 'extracting': return <FileText size={14} className="text-amber-500" />
+      case 'browser_init': return <Chrome size={14} className="text-blue-600" />
+      case 'browser_close': return <Chrome size={14} className="text-zinc-500" />
+      case 'browser_error': return <X size={14} className="text-red-500" />
+      case 'screenshot': return <Camera size={14} className="text-green-500" />
       default: return <Loader2 size={14} className="text-zinc-400 animate-spin" />
     }
   }
@@ -121,6 +129,10 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
       case 'web_access': return 'bg-cyan-50 border-cyan-200 text-cyan-700'
       case 'analyzing': return 'bg-violet-50 border-violet-200 text-violet-700'
       case 'extracting': return 'bg-amber-50 border-amber-200 text-amber-700'
+      case 'browser_init': return 'bg-blue-50 border-blue-200 text-blue-700'
+      case 'browser_close': return 'bg-zinc-50 border-zinc-200 text-zinc-700'
+      case 'browser_error': return 'bg-red-50 border-red-200 text-red-700'
+      case 'screenshot': return 'bg-green-50 border-green-200 text-green-700'
       default: return 'bg-zinc-50 border-zinc-200 text-zinc-700'
     }
   }
@@ -211,7 +223,19 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
                         </div>
                       )}
 
-                      {event.data && !event.url && !event.progress && (
+                      {/* Show screenshot if present */}
+                      {event.screenshot && (
+                        <div className="mt-2">
+                          <img
+                            src={`data:image/png;base64,${event.screenshot}`}
+                            alt="Screenshot"
+                            className="w-full rounded border border-current/20 cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(`data:image/png;base64,${event.screenshot}`, '_blank')}
+                          />
+                        </div>
+                      )}
+
+                      {event.data && !event.url && !event.progress && !event.screenshot && (
                         <pre className="mt-1 text-[10px] opacity-70 overflow-x-auto">
                           {JSON.stringify(event.data, null, 2)}
                         </pre>

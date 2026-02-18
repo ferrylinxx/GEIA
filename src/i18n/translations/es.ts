@@ -94,6 +94,7 @@
     networkDrive: 'Unidad de Red',
     generateImage: 'Generar Imagen',
     deepResearch: 'Deep Research',
+    browserAgent: 'Navegador Autónomo',
     send: 'Enviar',
     stop: 'Detener',
     speak: 'Hablar (microfono)',
