@@ -16,20 +16,11 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Exclude ssh2 and ssh2-sftp-client from client bundle
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Don't bundle these modules on the client side
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'ssh2': false,
-        'ssh2-sftp-client': false,
-      }
-    }
-    return config
-  },
+  // Empty turbopack config to silence the warning
+  turbopack: {},
 
   // Mark ssh2 packages as external for server-side
+  // This prevents Turbopack from trying to bundle these Node.js-only modules
   serverExternalPackages: ['ssh2', 'ssh2-sftp-client'],
 };
 
