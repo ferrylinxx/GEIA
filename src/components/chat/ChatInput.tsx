@@ -13,9 +13,14 @@ import { coerceMimeType, sanitizeFilename } from '@/lib/file-utils'
 import { AUTO_RAG_INGEST_ON_UPLOAD } from '@/lib/rag-ingest-config'
 import { useProjectContext } from '@/hooks/useProjectContext'
 import SmartSuggestions from './SmartSuggestions'
+import FollowUpSuggestions from './FollowUpSuggestions'
 
 interface PendingAttachment extends FileAttachment {
   local_preview_url?: string
+}
+
+interface ChatInputProps {
+  onSuggestionSelect?: (text: string) => void
 }
 
 const formatFileSize = (bytes: number) => {
@@ -24,7 +29,7 @@ const formatFileSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function ChatInput() {
+export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
   const { t, language } = useTranslation()
   const router = useRouter()
   const { projectId, projectName } = useProjectContext()
@@ -830,6 +835,11 @@ export default function ChatInput() {
           attachments={attachments}
           onApplySuggestion={handleApplySuggestion}
         />
+
+        {/* Follow-up Suggestions */}
+        {onSuggestionSelect && (
+          <FollowUpSuggestions onSelectSuggestion={onSuggestionSelect} />
+        )}
 
         {/* Active tools indicator pills */}
         {activeToolsCount > 0 && (

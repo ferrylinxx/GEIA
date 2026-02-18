@@ -76,7 +76,7 @@ export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSugg
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/50 shadow-sm">
         <div className="flex items-start gap-2">
           <Sparkles size={16} className="text-indigo-500 mt-0.5 shrink-0" />

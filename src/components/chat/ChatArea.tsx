@@ -5,7 +5,6 @@ import { useChatStore } from '@/store/chat-store'
 import { useUIStore, type ToolStatus } from '@/store/ui-store'
 import MessageBubble from '@/components/chat/MessageBubble'
 import ChatInput from '@/components/chat/ChatInput'
-import FollowUpSuggestions from '@/components/chat/FollowUpSuggestions'
 import DeepResearchProgress from '@/components/chat/DeepResearchProgress'
 import DeepResearchFloatingWindow from '@/components/chat/DeepResearchFloatingWindow'
 import { Loader2, Globe, Database, HardDrive, ArrowDown, ImagePlus, FlaskConical, FileText, BarChart3 } from 'lucide-react'
@@ -256,10 +255,7 @@ export default function ChatArea() {
         </button>
       )}
 
-      {/* Follow-up suggestions */}
-      <FollowUpSuggestions onSelectSuggestion={handleSuggestionSelect} />
-
-      <ChatInput />
+      <ChatInput onSuggestionSelect={handleSuggestionSelect} />
 
       {/* Deep Research Floating Window */}
       <DeepResearchFloatingWindow
