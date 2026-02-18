@@ -86,27 +86,48 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
   }, [])
 
   const playNotificationSound = useCallback(() => {
-    if (!soundEnabled || typeof window === 'undefined') return
+    if (!soundEnabled || typeof window === 'undefined') {
+      console.log('[Sound] Sound disabled or window undefined')
+      return
+    }
+
     try {
+      console.log('[Sound] Attempting to play notification sound...')
+
       const AudioContextCtor = window.AudioContext || (
         window as Window & { webkitAudioContext?: typeof AudioContext }
       ).webkitAudioContext
-      if (!AudioContextCtor) return
+
+      if (!AudioContextCtor) {
+        console.log('[Sound] AudioContext not supported')
+        return
+      }
 
       const ctx = new AudioContextCtor()
+      console.log('[Sound] AudioContext created, state:', ctx.state)
+
+      // Resume context if suspended (required in some browsers)
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          console.log('[Sound] AudioContext resumed')
+        })
+      }
+
       const now = ctx.currentTime
       const gain = ctx.createGain()
       gain.gain.setValueAtTime(0.0001, now)
-      gain.gain.linearRampToValueAtTime(0.10, now + 0.02)
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32)
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35)
       gain.connect(ctx.destination)
 
+      // Primer tono agudo
       const toneA = ctx.createOscillator()
       toneA.type = 'sine'
       toneA.frequency.setValueAtTime(1760, now)
       toneA.frequency.exponentialRampToValueAtTime(2349, now + 0.14)
       toneA.connect(gain)
 
+      // Segundo tono más agudo
       const toneB = ctx.createOscillator()
       toneB.type = 'sine'
       toneB.frequency.setValueAtTime(2637, now + 0.15)
@@ -118,11 +139,14 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       toneB.start(now + 0.15)
       toneB.stop(now + 0.31)
 
+      console.log('[Sound] Sound playing...')
+
       window.setTimeout(() => {
         void ctx.close().catch(() => undefined)
-      }, 450)
-    } catch {
-      // Ignore audio runtime errors
+        console.log('[Sound] AudioContext closed')
+      }, 500)
+    } catch (error) {
+      console.error('[Sound] Error playing notification sound:', error)
     }
   }, [soundEnabled])
 
