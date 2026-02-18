@@ -94,6 +94,27 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     try {
       console.log('[Sound] Attempting to play notification sound...')
 
+      // Usar archivo MP3 personalizado
+      const audio = new Audio('/halloween.mp3')
+      audio.volume = 0.5 // Volumen al 50%
+
+      audio.play()
+        .then(() => {
+          console.log('[Sound] MP3 notification playing...')
+        })
+        .catch((error) => {
+          console.error('[Sound] Error playing MP3:', error)
+          // Fallback al sonido sintetizado si falla el MP3
+          playFallbackSound()
+        })
+    } catch (error) {
+      console.error('[Sound] Error playing notification sound:', error)
+      playFallbackSound()
+    }
+  }, [soundEnabled])
+
+  const playFallbackSound = useCallback(() => {
+    try {
       const AudioContextCtor = window.AudioContext || (
         window as Window & { webkitAudioContext?: typeof AudioContext }
       ).webkitAudioContext
@@ -104,9 +125,8 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       }
 
       const ctx = new AudioContextCtor()
-      console.log('[Sound] AudioContext created, state:', ctx.state)
+      console.log('[Sound] Using fallback synthesized sound')
 
-      // Resume context if suspended (required in some browsers)
       if (ctx.state === 'suspended') {
         ctx.resume().then(() => {
           console.log('[Sound] AudioContext resumed')
@@ -120,14 +140,12 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35)
       gain.connect(ctx.destination)
 
-      // Primer tono agudo
       const toneA = ctx.createOscillator()
       toneA.type = 'sine'
       toneA.frequency.setValueAtTime(1760, now)
       toneA.frequency.exponentialRampToValueAtTime(2349, now + 0.14)
       toneA.connect(gain)
 
-      // Segundo tono más agudo
       const toneB = ctx.createOscillator()
       toneB.type = 'sine'
       toneB.frequency.setValueAtTime(2637, now + 0.15)
@@ -139,16 +157,13 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       toneB.start(now + 0.15)
       toneB.stop(now + 0.31)
 
-      console.log('[Sound] Sound playing...')
-
       window.setTimeout(() => {
         void ctx.close().catch(() => undefined)
-        console.log('[Sound] AudioContext closed')
       }, 500)
     } catch (error) {
-      console.error('[Sound] Error playing notification sound:', error)
+      console.error('[Sound] Fallback sound error:', error)
     }
-  }, [soundEnabled])
+  }, [])
 
   useEffect(() => {
     attachmentsRef.current = attachments
