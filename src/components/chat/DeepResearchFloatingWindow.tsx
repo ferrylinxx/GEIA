@@ -198,7 +198,7 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
                       <p className="font-medium">{event.message}</p>
 
                       {/* Show URL if present */}
-                      {event.url && (
+                      {event.url ? (
                         <a
                           href={event.url}
                           target="_blank"
@@ -208,10 +208,10 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
                           <Link2 size={10} />
                           <span className="truncate">{event.url}</span>
                         </a>
-                      )}
+                      ) : null}
 
                       {/* Show progress bar if present */}
-                      {event.progress !== undefined && (
+                      {typeof event.progress === 'number' ? (
                         <div className="mt-2">
                           <div className="w-full bg-white/50 rounded-full h-1.5 overflow-hidden">
                             <div
@@ -221,10 +221,10 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
                           </div>
                           <p className="text-[10px] opacity-50 mt-0.5">{event.progress}%</p>
                         </div>
-                      )}
+                      ) : null}
 
                       {/* Show screenshot if present */}
-                      {event.screenshot && (
+                      {event.screenshot ? (
                         <div className="mt-2">
                           <img
                             src={`data:image/png;base64,${event.screenshot}`}
@@ -233,13 +233,13 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
                             onClick={() => window.open(`data:image/png;base64,${event.screenshot}`, '_blank')}
                           />
                         </div>
-                      )}
+                      ) : null}
 
-                      {event.data && !event.url && !event.progress && !event.screenshot && (
+                      {event.data && !event.url && !event.progress && !event.screenshot ? (
                         <pre className="mt-1 text-[10px] opacity-70 overflow-x-auto">
                           {JSON.stringify(event.data, null, 2)}
                         </pre>
-                      )}
+                      ) : null}
                       <p className="text-[10px] opacity-50 mt-1">
                         {new Date(event.timestamp).toLocaleTimeString('es-ES')}
                       </p>

@@ -15,8 +15,8 @@ import { coerceMimeType, sanitizeFilename } from '@/lib/file-utils'
 import { AUTO_RAG_INGEST_ON_UPLOAD } from '@/lib/rag-ingest-config'
 import { useProjectContext } from '@/hooks/useProjectContext'
 import { useActivity } from '@/contexts/ActivityContext'
+import { type ActivityStatus } from '@/lib/activity'
 
-type ActivityStatus = 'online' | 'idle' | 'offline'
 interface PendingAttachment extends FileAttachment {
   local_preview_url?: string
 }
@@ -113,7 +113,8 @@ export default function WelcomeScreen() {
 
   const statusConfig: Record<ActivityStatus, { label: string; dotClass: string; waveRgb: string }> = {
     online: { label: t.welcome.activityOnline, dotClass: 'bg-emerald-500', waveRgb: '16 185 129' },
-    idle: { label: t.welcome.activityIdle, dotClass: 'bg-amber-500', waveRgb: '245 158 11' },
+    typing: { label: 'Escribiendo', dotClass: 'bg-blue-500', waveRgb: '59 130 246' },
+    read: { label: 'Leyendo', dotClass: 'bg-purple-500', waveRgb: '168 85 247' },
     offline: { label: t.welcome.activityOffline, dotClass: 'bg-zinc-400', waveRgb: '161 161 170' },
   }
   const activityCfg = statusConfig[activityStatus]

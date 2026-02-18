@@ -72,7 +72,8 @@ export class BrowserAgent {
       this.emitEvent('analyzing', '✨ Analizando resultados de búsqueda...', undefined, undefined, 40)
       
       // Tomar screenshot
-      const screenshot = await this.page.screenshot({ encoding: 'base64', fullPage: false })
+      const screenshotBuffer = await this.page.screenshot({ fullPage: false })
+      const screenshot = screenshotBuffer.toString('base64')
       this.emitEvent('screenshot', '📸 Captura de pantalla tomada', undefined, undefined, 50, screenshot)
       
       // Extraer resultados
@@ -120,7 +121,8 @@ export class BrowserAgent {
       this.emitEvent('analyzing', '✨ Analizando contenido de la página...', undefined, undefined, 80)
       
       // Tomar screenshot
-      const screenshot = await this.page.screenshot({ encoding: 'base64', fullPage: false })
+      const screenshotBuffer = await this.page.screenshot({ fullPage: false })
+      const screenshot = screenshotBuffer.toString('base64')
       this.emitEvent('screenshot', '📸 Captura de pantalla tomada', undefined, undefined, 85, screenshot)
       
       // Extraer contenido

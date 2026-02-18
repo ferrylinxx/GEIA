@@ -6,8 +6,7 @@ import {
   loadSharedContextMap,
 } from '@/lib/activity-server'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
-
-type ActivityStatus = 'online' | 'idle' | 'offline'
+import { type ActivityStatus } from '@/lib/activity'
 
 interface DirectoryUser {
   id: string
@@ -49,7 +48,7 @@ export async function GET() {
     loadSharedContextMap(service, user.id, userIds),
   ])
 
-  const priority: Record<ActivityStatus, number> = { online: 0, idle: 1, offline: 2 }
+  const priority: Record<ActivityStatus, number> = { online: 0, typing: 1, read: 2, offline: 3 }
   const users: DirectoryUser[] = profileRows.map((profile) => {
     const masked = buildMaskedActivityForViewer({
       viewerUserId: user.id,

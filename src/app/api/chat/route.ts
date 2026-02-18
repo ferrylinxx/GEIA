@@ -3351,9 +3351,11 @@ REGLAS OBLIGATORIAS:
 
       console.log('[WebSearch] Searching for:', inputText)
 
-      // Create progress callback for real-time events
+      // Note: We cannot send real-time events here because the stream hasn't been created yet
+      // Events will be sent when the stream starts
       const searchProgressCallback = (type: string, message: string, data?: unknown, url?: string, progress?: number) => {
-        sendResearchEvent(type, message, data, controller, url, progress)
+        // Events are handled internally by searchWeb and stored for later
+        console.log('[WebSearch] Progress:', type, message)
       }
 
       const rawResults = await searchWeb(inputText, initialResultCount, searchProgressCallback)

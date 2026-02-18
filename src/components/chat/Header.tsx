@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/i18n/LanguageContext'
 import { useProjectContext } from '@/hooks/useProjectContext'
 import { useActivity } from '@/contexts/ActivityContext'
+import { type ActivityStatus } from '@/lib/activity'
 
 const APP_VERSION = 'V2.5.0(Beta)'
 
@@ -19,8 +20,6 @@ interface DynamicModel {
   owned_by: string
   icon_url?: string | null
 }
-
-type ActivityStatus = 'online' | 'idle' | 'offline'
 
 export default function Header() {
   const { t } = useTranslation()
@@ -190,7 +189,8 @@ export default function Header() {
 
   const statusConfig: Record<ActivityStatus, { label: string; dotClass: string; waveRgb: string }> = {
     online: { label: t.header.activityOnline, dotClass: 'bg-emerald-500', waveRgb: '16 185 129' },
-    idle: { label: t.header.activityIdle, dotClass: 'bg-amber-500', waveRgb: '245 158 11' },
+    typing: { label: 'Escribiendo', dotClass: 'bg-blue-500', waveRgb: '59 130 246' },
+    read: { label: 'Leyendo', dotClass: 'bg-purple-500', waveRgb: '168 85 247' },
     offline: { label: t.header.activityOffline, dotClass: 'bg-zinc-400', waveRgb: '161 161 170' },
   }
   const activityCfg = statusConfig[activityStatus]

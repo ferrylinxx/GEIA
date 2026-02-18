@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
-import { computeEffectiveStatus } from '@/lib/activity'
+import { computeEffectiveStatus, type ActivityStatus } from '@/lib/activity'
 
 async function verifyAdmin() {
   const supabase = await createServerSupabaseClient()
@@ -34,7 +34,7 @@ export async function GET() {
     const nowMs = Date.now()
     const typedRows = (activityRows || []) as Array<{
       user_id: string
-      status: 'online' | 'idle' | 'offline'
+      status: ActivityStatus
       last_seen_at: string | null
       last_activity_at: string | null
     }>
