@@ -15,6 +15,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // Exclude ssh2 and ssh2-sftp-client from client bundle
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't bundle these modules on the client side
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'ssh2': false,
+        'ssh2-sftp-client': false,
+      }
+    }
+    return config
+  },
+
+  // Mark ssh2 packages as external for server-side
+  serverExternalPackages: ['ssh2', 'ssh2-sftp-client'],
 };
 
 export default nextConfig;
