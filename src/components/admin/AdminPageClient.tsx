@@ -6,16 +6,13 @@ import { AIProvider, ModelConfig, DbConnection, DbSchemaTable, NetworkDrive, Ban
 import { createClient } from '@/lib/supabase/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import ModernAdminLayout from './ModernAdminLayout'
-import ModernDashboard from './ModernDashboard'
-import ModernSectionWrapper from './ModernSectionWrapper'
 import RolesManagement from './RolesManagement'
 import ToolsManagement from './ToolsManagement'
 import {
   ArrowLeft, Users, Bot, Plug, Trash2, Edit3, Plus, Eye, EyeOff,
   ArrowUp, ArrowDown, Shield, Loader2, Save, X, Check,
   ChevronRight, RefreshCw, MessageSquare, FileText, Database, GripVertical, Upload, HardDrive, Megaphone, ToggleLeft, ToggleRight, Search, Crown, MessageCircle,
-  MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle, Cpu
+  MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle
 } from 'lucide-react'
 
 type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents'
@@ -134,7 +131,6 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [providers, setProviders] = useState<AIProvider[]>([])
   const [models, setModels] = useState<ModelConfig[]>([])
   const [loading, setLoading] = useState(true)
-  const [userProfile, setUserProfile] = useState<UserRow | null>(null)
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editRole, setEditRole] = useState('')
@@ -307,14 +303,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         fetch('/api/admin/db-connections'),
         fetch('/api/admin/network-drives'),
       ])
-      if (usersRes.ok) {
-        const d = await usersRes.json()
-        const allUsers = d.users || []
-        setUsers(allUsers)
-        // Set current user profile
-        const currentUser = allUsers.find((u: UserRow) => u.id === currentUserId)
-        if (currentUser) setUserProfile(currentUser)
-      }
+      if (usersRes.ok) { const d = await usersRes.json(); setUsers(d.users || []) }
       if (providersRes.ok) { const d = await providersRes.json(); setProviders(d.providers || []) }
       if (modelsRes.ok) { const d = await modelsRes.json(); setModels(d.models || []) }
       if (connsRes.ok) { const d = await connsRes.json(); setConnections(d.connections || []) }
@@ -1455,19 +1444,88 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
   function renderMainContent() {
     return (
-      <ModernAdminLayout
-        activeTab={tab}
-        onTabChange={setTab}
-        userProfile={userProfile}
-        onBackClick={() => router.push('/chat')}
-        statusMessage={statusMsg}
-      >
-        {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="animate-spin text-zinc-400" size={28} /></div>
-        ) : (
-          <>
-            {/* DASHBOARD TAB - Mejorado y Responsive */}
-            {tab === 'dashboard' && (
+      <div className="admin-glass min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/40">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-18%] left-[-12%] w-[720px] h-[720px] rounded-full bg-gradient-to-br from-blue-400/45 to-cyan-300/35 blur-[90px]" style={{ animation: 'welcome-blob-1 12s ease-in-out infinite' }} />
+        <div className="absolute top-[10%] right-[-18%] w-[680px] h-[680px] rounded-full bg-gradient-to-br from-violet-400/35 to-fuchsia-300/30 blur-[88px]" style={{ animation: 'welcome-blob-2 15s ease-in-out infinite' }} />
+        <div className="absolute bottom-[-14%] left-[15%] w-[640px] h-[640px] rounded-full bg-gradient-to-br from-indigo-400/35 to-purple-300/28 blur-[82px]" style={{ animation: 'welcome-blob-3 13s ease-in-out infinite' }} />
+      </div>
+
+      {/* Header - Mejorado y Responsive */}
+      <header className="liquid-glass-header px-4 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-zinc-200/50 shadow-sm">
+        <button onClick={() => router.push('/chat')} className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 hover:text-zinc-900 transition-all duration-200 hover:scale-105">
+          <ArrowLeft size={18} />
+        </button>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+            <Shield size={18} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-sm md:text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Panel Admin
+            </h1>
+            <p className="text-[10px] md:text-xs text-zinc-500 hidden sm:block">Gestión del sistema</p>
+          </div>
+        </div>
+        <div className="flex-1" />
+        {statusMsg && (
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 animate-in shadow-sm">
+            <Check size={14} /> {statusMsg}
+          </div>
+        )}
+      </header>
+
+      <div className="flex relative z-10">
+        {/* Sidebar tabs - Mejorado y Responsive */}
+        <nav className="hidden lg:flex lg:flex-col w-72 liquid-glass-sidebar min-h-[calc(100vh-65px)] p-6 space-y-2 bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-xl border-r border-zinc-200/50 shadow-xl">
+          <div className="mb-6 pb-6 border-b border-zinc-200/50">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Navegación
+            </h2>
+            <p className="text-xs text-zinc-500 mt-1">Gestión del sistema</p>
+          </div>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`w-full text-left px-4 py-3.5 text-sm rounded-xl flex items-center gap-3 transition-all duration-200 ${
+                tab === t.id
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30 scale-[1.02]'
+                  : 'text-zinc-600 hover:bg-zinc-100/80 hover:text-zinc-900 hover:scale-[1.01] font-medium'
+              }`}>
+              <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
+                {t.icon}
+              </div>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Mobile Navigation - Horizontal Scroll */}
+        <div className="lg:hidden w-full sticky top-[57px] md:top-[65px] z-20 bg-white/90 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm">
+          <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl whitespace-nowrap transition-all duration-200 ${
+                  tab === t.id
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30'
+                    : 'bg-white text-zinc-600 hover:bg-zinc-100 font-medium border border-zinc-200'
+                }`}>
+                <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
+                  {t.icon}
+                </div>
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content - Responsive */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+          {loading ? (
+            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-zinc-400" size={28} /></div>
+          ) : (
+            <>
+              {/* DASHBOARD TAB - Mejorado y Responsive */}
+              {tab === 'dashboard' && (
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-6">
                     Dashboard General
@@ -1570,14 +1628,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               {tab === 'banners' && renderBannersTab()}
             </>
           )}
-      </ModernAdminLayout>
-    )
-  }
+        </main>
+      </div>
 
-  function renderChatViewer() {
-    if (!chatViewerOpen) return null
-
-    return (
+      {chatViewerOpen && (
         <div
           className="fixed inset-0 z-40 bg-zinc-900/35 backdrop-blur-[2px] flex items-center justify-center p-4"
           onClick={closeChatViewer}
@@ -1712,7 +1766,9 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
             </div>
           </div>
         </div>
-      )
+      )}
+    </div>
+    )
   }
 
   // ======= RENDER FUNCTIONS =======
@@ -4297,7 +4353,6 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   return (
     <>
       {renderMainContent()}
-      {renderChatViewer()}
 
       {/* Create User Modal */}
       {showCreateUserModal && (
