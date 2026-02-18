@@ -265,6 +265,12 @@ export interface NetworkDrive {
   sync_error: string | null
   created_at: string
   updated_at: string
+  // SFTP support
+  connection_type?: 'smb' | 'sftp'
+  sftp_host?: string
+  sftp_port?: number
+  sftp_username?: string
+  sftp_password?: string
 }
 
 export interface NetworkFile {

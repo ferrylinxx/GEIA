@@ -35,6 +35,16 @@ export default function ChatInput() {
   const [isListening, setIsListening] = useState(false)
   const [ttsEnabled, setTtsEnabled] = useState(false)
   const [multiline, setMultiline] = useState(false)
+  const [toolPermissions, setToolPermissions] = useState({
+    webSearch: true,
+    dbQuery: true,
+    networkDriveRag: true,
+    imageGeneration: true,
+    deepResearch: true,
+    documentGeneration: true,
+    spreadsheetAnalysis: true,
+    codeInterpreter: true,
+  })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -118,6 +128,22 @@ export default function ChatInput() {
       revokeAttachmentPreviews(attachmentsRef.current)
     }
   }, [revokeAttachmentPreviews])
+
+  // Load tool permissions on mount
+  useEffect(() => {
+    const loadToolPermissions = async () => {
+      try {
+        const res = await fetch('/api/tools/permissions')
+        if (res.ok) {
+          const data = await res.json()
+          setToolPermissions(data.tools)
+        }
+      } catch (error) {
+        console.error('Error loading tool permissions:', error)
+      }
+    }
+    void loadToolPermissions()
+  }, [])
 
   // Mobile keyboard handling: keep the composer above the virtual keyboard.
   // We update a CSS var so layout responds without React re-renders.
@@ -850,55 +876,71 @@ export default function ChatInput() {
                   {t.chatInput.attachFile}
                 </button>
                 <hr className="border-zinc-200/60 my-1 mx-2" />
-                <button onClick={() => { setWebSearch(!webSearch) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${webSearch ? 'bg-blue-50 text-blue-700 shadow-sm shadow-blue-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-blue-50/30'}`}>
-                  <Globe size={16} className={webSearch ? 'text-blue-500' : 'text-blue-400'} />
-                  {t.chatInput.webSearch}
-                  {webSearch && <Check size={14} className="ml-auto text-blue-500" />}
-                </button>
-                <button onClick={() => { setDbQuery(!dbQuery) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${dbQuery ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-indigo-50/80 hover:to-indigo-50/30'}`}>
-                  <Database size={16} className={dbQuery ? 'text-indigo-500' : 'text-indigo-400'} />
-                  {t.chatInput.database}
-                  {dbQuery && <Check size={14} className="ml-auto text-indigo-500" />}
-                </button>
-                <button onClick={() => { setNetworkDriveRag(!networkDriveRag) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${networkDriveRag ? 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-emerald-50/80 hover:to-emerald-50/30'}`}>
-                  <HardDrive size={16} className={networkDriveRag ? 'text-emerald-500' : 'text-emerald-400'} />
-                  {t.chatInput.networkDrive}
-                  {networkDriveRag && <Check size={14} className="ml-auto text-emerald-500" />}
-                </button>
-                <button onClick={() => { setImageGeneration(!imageGeneration) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${imageGeneration ? 'bg-purple-50 text-purple-700 shadow-sm shadow-purple-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-purple-50/80 hover:to-purple-50/30'}`}>
-                  <ImagePlus size={16} className={imageGeneration ? 'text-purple-500' : 'text-purple-400'} />
-                  {t.chatInput.generateImage}
-                  {imageGeneration && <Check size={14} className="ml-auto text-purple-500" />}
-                </button>
+                {toolPermissions.webSearch && (
+                  <button onClick={() => { setWebSearch(!webSearch) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${webSearch ? 'bg-blue-50 text-blue-700 shadow-sm shadow-blue-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-blue-50/30'}`}>
+                    <Globe size={16} className={webSearch ? 'text-blue-500' : 'text-blue-400'} />
+                    {t.chatInput.webSearch}
+                    {webSearch && <Check size={14} className="ml-auto text-blue-500" />}
+                  </button>
+                )}
+                {toolPermissions.dbQuery && (
+                  <button onClick={() => { setDbQuery(!dbQuery) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${dbQuery ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-indigo-50/80 hover:to-indigo-50/30'}`}>
+                    <Database size={16} className={dbQuery ? 'text-indigo-500' : 'text-indigo-400'} />
+                    {t.chatInput.database}
+                    {dbQuery && <Check size={14} className="ml-auto text-indigo-500" />}
+                  </button>
+                )}
+                {toolPermissions.networkDriveRag && (
+                  <button onClick={() => { setNetworkDriveRag(!networkDriveRag) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${networkDriveRag ? 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-emerald-50/80 hover:to-emerald-50/30'}`}>
+                    <HardDrive size={16} className={networkDriveRag ? 'text-emerald-500' : 'text-emerald-400'} />
+                    {t.chatInput.networkDrive}
+                    {networkDriveRag && <Check size={14} className="ml-auto text-emerald-500" />}
+                  </button>
+                )}
+                {toolPermissions.imageGeneration && (
+                  <button onClick={() => { setImageGeneration(!imageGeneration) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${imageGeneration ? 'bg-purple-50 text-purple-700 shadow-sm shadow-purple-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-purple-50/80 hover:to-purple-50/30'}`}>
+                    <ImagePlus size={16} className={imageGeneration ? 'text-purple-500' : 'text-purple-400'} />
+                    {t.chatInput.generateImage}
+                    {imageGeneration && <Check size={14} className="ml-auto text-purple-500" />}
+                  </button>
+                )}
                 <hr className="border-zinc-200/60 my-1 mx-2" />
-                <button onClick={() => { setDeepResearch(!deepResearch); if (!deepResearch) setWebSearch(true) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${deepResearch ? 'bg-amber-50 text-amber-700 shadow-sm shadow-amber-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-amber-50/80 hover:to-amber-50/30'}`}>
-                  <FlaskConical size={16} className={deepResearch ? 'text-amber-500' : 'text-amber-400'} />
-                  {t.chatInput.deepResearch}
-                  {deepResearch && <Check size={14} className="ml-auto text-amber-500" />}
-                </button>
-                <button onClick={() => { setDocumentGeneration(!documentGeneration) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${documentGeneration ? 'bg-sky-50 text-sky-700 shadow-sm shadow-sky-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-sky-50/80 hover:to-sky-50/30'}`}>
-                  <FileText size={16} className={documentGeneration ? 'text-sky-500' : 'text-sky-400'} />
-                  {t.chatInput.generateDocument}
-                  {documentGeneration && <Check size={14} className="ml-auto text-sky-500" />}
-                </button>
-                <button onClick={() => { setSpreadsheetAnalysis(!spreadsheetAnalysis) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${spreadsheetAnalysis ? 'bg-cyan-50 text-cyan-700 shadow-sm shadow-cyan-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:to-cyan-50/30'}`}>
-                  <BarChart3 size={16} className={spreadsheetAnalysis ? 'text-cyan-500' : 'text-cyan-400'} />
-                  {t.chatInput.spreadsheetAnalysis}
-                  {spreadsheetAnalysis && <Check size={14} className="ml-auto text-cyan-500" />}
-                </button>
-                <button onClick={() => { setCodeInterpreter(!codeInterpreter) }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${codeInterpreter ? 'bg-orange-50 text-orange-700 shadow-sm shadow-orange-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-orange-50/80 hover:to-orange-50/30'}`}>
-                  <Code2 size={16} className={codeInterpreter ? 'text-orange-500' : 'text-orange-400'} />
-                  Code Interpreter
-                  {codeInterpreter && <Check size={14} className="ml-auto text-orange-500" />}
-                </button>
+                {toolPermissions.deepResearch && (
+                  <button onClick={() => { setDeepResearch(!deepResearch); if (!deepResearch) setWebSearch(true) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${deepResearch ? 'bg-amber-50 text-amber-700 shadow-sm shadow-amber-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-amber-50/80 hover:to-amber-50/30'}`}>
+                    <FlaskConical size={16} className={deepResearch ? 'text-amber-500' : 'text-amber-400'} />
+                    {t.chatInput.deepResearch}
+                    {deepResearch && <Check size={14} className="ml-auto text-amber-500" />}
+                  </button>
+                )}
+                {toolPermissions.documentGeneration && (
+                  <button onClick={() => { setDocumentGeneration(!documentGeneration) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${documentGeneration ? 'bg-sky-50 text-sky-700 shadow-sm shadow-sky-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-sky-50/80 hover:to-sky-50/30'}`}>
+                    <FileText size={16} className={documentGeneration ? 'text-sky-500' : 'text-sky-400'} />
+                    {t.chatInput.generateDocument}
+                    {documentGeneration && <Check size={14} className="ml-auto text-sky-500" />}
+                  </button>
+                )}
+                {toolPermissions.spreadsheetAnalysis && (
+                  <button onClick={() => { setSpreadsheetAnalysis(!spreadsheetAnalysis) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${spreadsheetAnalysis ? 'bg-cyan-50 text-cyan-700 shadow-sm shadow-cyan-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:to-cyan-50/30'}`}>
+                    <BarChart3 size={16} className={spreadsheetAnalysis ? 'text-cyan-500' : 'text-cyan-400'} />
+                    {t.chatInput.spreadsheetAnalysis}
+                    {spreadsheetAnalysis && <Check size={14} className="ml-auto text-cyan-500" />}
+                  </button>
+                )}
+                {toolPermissions.codeInterpreter && (
+                  <button onClick={() => { setCodeInterpreter(!codeInterpreter) }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${codeInterpreter ? 'bg-orange-50 text-orange-700 shadow-sm shadow-orange-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-orange-50/80 hover:to-orange-50/30'}`}>
+                    <Code2 size={16} className={codeInterpreter ? 'text-orange-500' : 'text-orange-400'} />
+                    Code Interpreter
+                    {codeInterpreter && <Check size={14} className="ml-auto text-orange-500" />}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -985,79 +1027,93 @@ export default function ChatInput() {
 
               <hr className="border-white/40 my-2 mx-2" />
 
-              <button
-                onClick={() => { setWebSearch(!webSearch) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  webSearch ? 'bg-blue-50/80 text-blue-700' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <Globe size={18} className={webSearch ? 'text-blue-600' : 'text-blue-500'} />
-                {t.chatInput.webSearch}
-                {webSearch && <Check size={16} className="ml-auto text-blue-600" />}
-              </button>
-              <button
-                onClick={() => { setDbQuery(!dbQuery) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  dbQuery ? 'bg-indigo-50/80 text-indigo-700' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <Database size={18} className={dbQuery ? 'text-indigo-600' : 'text-indigo-500'} />
-                {t.chatInput.database}
-                {dbQuery && <Check size={16} className="ml-auto text-indigo-600" />}
-              </button>
-              <button
-                onClick={() => { setNetworkDriveRag(!networkDriveRag) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  networkDriveRag ? 'bg-emerald-50/80 text-emerald-700' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <HardDrive size={18} className={networkDriveRag ? 'text-emerald-600' : 'text-emerald-500'} />
-                {t.chatInput.networkDrive}
-                {networkDriveRag && <Check size={16} className="ml-auto text-emerald-600" />}
-              </button>
-              <button
-                onClick={() => { setImageGeneration(!imageGeneration) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  imageGeneration ? 'bg-purple-50/80 text-purple-700' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <ImagePlus size={18} className={imageGeneration ? 'text-purple-600' : 'text-purple-500'} />
-                {t.chatInput.generateImage}
-                {imageGeneration && <Check size={16} className="ml-auto text-purple-600" />}
-              </button>
+              {toolPermissions.webSearch && (
+                <button
+                  onClick={() => { setWebSearch(!webSearch) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    webSearch ? 'bg-blue-50/80 text-blue-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <Globe size={18} className={webSearch ? 'text-blue-600' : 'text-blue-500'} />
+                  {t.chatInput.webSearch}
+                  {webSearch && <Check size={16} className="ml-auto text-blue-600" />}
+                </button>
+              )}
+              {toolPermissions.dbQuery && (
+                <button
+                  onClick={() => { setDbQuery(!dbQuery) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    dbQuery ? 'bg-indigo-50/80 text-indigo-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <Database size={18} className={dbQuery ? 'text-indigo-600' : 'text-indigo-500'} />
+                  {t.chatInput.database}
+                  {dbQuery && <Check size={16} className="ml-auto text-indigo-600" />}
+                </button>
+              )}
+              {toolPermissions.networkDriveRag && (
+                <button
+                  onClick={() => { setNetworkDriveRag(!networkDriveRag) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    networkDriveRag ? 'bg-emerald-50/80 text-emerald-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <HardDrive size={18} className={networkDriveRag ? 'text-emerald-600' : 'text-emerald-500'} />
+                  {t.chatInput.networkDrive}
+                  {networkDriveRag && <Check size={16} className="ml-auto text-emerald-600" />}
+                </button>
+              )}
+              {toolPermissions.imageGeneration && (
+                <button
+                  onClick={() => { setImageGeneration(!imageGeneration) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    imageGeneration ? 'bg-purple-50/80 text-purple-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <ImagePlus size={18} className={imageGeneration ? 'text-purple-600' : 'text-purple-500'} />
+                  {t.chatInput.generateImage}
+                  {imageGeneration && <Check size={16} className="ml-auto text-purple-600" />}
+                </button>
+              )}
 
               <hr className="border-white/40 my-2 mx-2" />
 
-              <button
-                onClick={() => { setDeepResearch(!deepResearch); if (!deepResearch) setWebSearch(true) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  deepResearch ? 'bg-amber-50/80 text-amber-700' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <FlaskConical size={18} className={deepResearch ? 'text-amber-600' : 'text-amber-500'} />
-                {t.chatInput.deepResearch}
-                {deepResearch && <Check size={16} className="ml-auto text-amber-600" />}
-              </button>
-              <button
-                onClick={() => { setDocumentGeneration(!documentGeneration) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  documentGeneration ? 'bg-sky-50/80 text-sky-700' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <FileText size={18} className={documentGeneration ? 'text-sky-600' : 'text-sky-500'} />
-                {t.chatInput.generateDocument}
-                {documentGeneration && <Check size={16} className="ml-auto text-sky-600" />}
-              </button>
-              <button
-                onClick={() => { setSpreadsheetAnalysis(!spreadsheetAnalysis) }}
-                className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
-                  spreadsheetAnalysis ? 'bg-cyan-50/80 text-cyan-800' : 'text-zinc-800 hover:bg-white/60'
-                }`}
-              >
-                <BarChart3 size={18} className={spreadsheetAnalysis ? 'text-cyan-700' : 'text-cyan-600'} />
-                {t.chatInput.spreadsheetAnalysis}
-                {spreadsheetAnalysis && <Check size={16} className="ml-auto text-cyan-700" />}
-              </button>
+              {toolPermissions.deepResearch && (
+                <button
+                  onClick={() => { setDeepResearch(!deepResearch); if (!deepResearch) setWebSearch(true) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    deepResearch ? 'bg-amber-50/80 text-amber-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <FlaskConical size={18} className={deepResearch ? 'text-amber-600' : 'text-amber-500'} />
+                  {t.chatInput.deepResearch}
+                  {deepResearch && <Check size={16} className="ml-auto text-amber-600" />}
+                </button>
+              )}
+              {toolPermissions.documentGeneration && (
+                <button
+                  onClick={() => { setDocumentGeneration(!documentGeneration) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    documentGeneration ? 'bg-sky-50/80 text-sky-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <FileText size={18} className={documentGeneration ? 'text-sky-600' : 'text-sky-500'} />
+                  {t.chatInput.generateDocument}
+                  {documentGeneration && <Check size={16} className="ml-auto text-sky-600" />}
+                </button>
+              )}
+              {toolPermissions.spreadsheetAnalysis && (
+                <button
+                  onClick={() => { setSpreadsheetAnalysis(!spreadsheetAnalysis) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    spreadsheetAnalysis ? 'bg-cyan-50/80 text-cyan-800' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <BarChart3 size={18} className={spreadsheetAnalysis ? 'text-cyan-700' : 'text-cyan-600'} />
+                  {t.chatInput.spreadsheetAnalysis}
+                  {spreadsheetAnalysis && <Check size={16} className="ml-auto text-cyan-700" />}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,53 +1,21 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { UserPlus, Eye, EyeOff } from 'lucide-react'
+import { ShieldAlert, ArrowLeft } from 'lucide-react'
 
 export default function RegisterPage() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    const supabase = createClient()
-    const { error: err } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    })
-    if (err) {
-      setError(err.message)
-      setLoading(false)
-    } else {
-      setSuccess(true)
-      setLoading(false)
-    }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black isolate">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover opacity-92 scale-[1.015]"
-            src="https://tecnofgb.com/wp-content/uploads/2026/02/hero-bg.mp4"
-          />
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black isolate">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover opacity-92 scale-[1.015]"
+          src="https://tecnofgb.com/wp-content/uploads/2026/02/hero-bg.mp4"
+        />
         </div>
 
         <div className="w-full max-w-md relative z-10">
@@ -75,7 +43,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="p-8 md:p-10 relative z-40 text-center">
-              <div className="relative mx-auto w-64 h-28 md:w-80 md:h-36 mb-4">
+              <div className="relative mx-auto w-64 h-28 md:w-80 md:h-36 mb-6">
                 <Image
                   src="https://tecnofgb.com/wp-content/uploads/2026/02/logo.png"
                   alt="GEIA Logo"
@@ -85,15 +53,48 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="bg-green-500/10 border border-green-400/30 text-green-300/90 rounded-2xl p-5 text-base md:text-lg backdrop-blur-xl shadow-inner font-medium">
-                ¡Cuenta creada! Revisa tu email para confirmar tu cuenta.
+              {/* Icon */}
+              <div className="flex justify-center mb-6">
+                <div className="p-4 rounded-full bg-amber-500/10 border border-amber-400/30">
+                  <ShieldAlert size={48} className="text-amber-400" />
+                </div>
               </div>
 
+              {/* Title */}
+              <h1 className="
+                text-2xl md:text-3xl font-semibold mb-4
+                bg-clip-text text-transparent
+                bg-gradient-to-br from-white/90 to-white/60
+              ">
+                Registro Deshabilitado
+              </h1>
+
+              {/* Message */}
+              <div className="bg-amber-500/10 border border-amber-400/30 text-amber-200/90 rounded-2xl p-5 text-sm md:text-base backdrop-blur-xl shadow-inner mb-6">
+                <p className="mb-3">
+                  El registro público de usuarios está deshabilitado por seguridad.
+                </p>
+                <p className="text-amber-300/70">
+                  Para obtener acceso, contacta con un administrador del sistema.
+                </p>
+              </div>
+
+              {/* Back to login button */}
               <Link
                 href="/auth/login"
-                className="mt-6 inline-block text-indigo-300 hover:text-indigo-200 font-medium text-base md:text-lg transition-colors"
+                className="
+                  inline-flex items-center gap-2 px-6 py-3 rounded-xl
+                  bg-gradient-to-r from-blue-600/75 via-indigo-600/75 to-violet-600/75
+                  hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500
+                  text-white font-medium text-sm md:text-base
+                  shadow-[0_10px_35px_rgba(79,70,229,0.35)]
+                  transition-all duration-400 ease-out
+                  hover:scale-[1.02] hover:shadow-[0_18px_55px_rgba(79,70,229,0.45)]
+                  backdrop-blur-md border border-white/6
+                "
               >
-                Ir al login →
+                <ArrowLeft size={18} />
+                Volver al Login
               </Link>
             </div>
           </div>
@@ -101,211 +102,3 @@ export default function RegisterPage() {
       </div>
     )
   }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black isolate">
-      {/* Fondo inmersivo */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover opacity-92 scale-[1.015]"
-          src="https://tecnofgb.com/wp-content/uploads/2026/02/hero-bg.mp4"
-        />
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Card de registro */}
-        <div className="
-          relative rounded-3xl md:rounded-[2.75rem] overflow-hidden isolate
-          bg-white/[0.052] backdrop-blur-3xl saturate-[1.92] brightness-[1.035] contrast-[1.07]
-          border border-white/[0.035]
-          shadow-[0_55px_130px_-45px_rgba(0,0,0,0.72),0_18px_55px_-18px_rgba(0,0,0,0.38),inset_0_4px_3px_rgba(0,0,0,0.18),inset_0_-4px_3px_rgba(0,0,0,0.18),inset_7px_7px_14px_rgba(0,0,0,0.22),inset_-7px_-7px_16px_rgba(0,0,0,0.22)]
-        ">
-          {/* Refracción sutil */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-28">
-            <filter id="liquid-refract-clean">
-              <feTurbulence type="fractalNoise" baseFrequency="0.009" numOctaves="4" seed="3" result="turbulence" />
-              <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="3.8" xChannelSelector="R" yChannelSelector="G" />
-              <feGaussianBlur stdDeviation="0.7" result="blurred" />
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="1.08" />
-              </feComponentTransfer>
-            </filter>
-            <rect width="100%" height="100%" filter="url(#liquid-refract-clean)" opacity="0.16" />
-          </svg>
-
-          {/* Chromatic aberration ligera */}
-          <div className="absolute inset-[-1.5px] pointer-events-none z-5 opacity-14 mix-blend-screen">
-            <div className="absolute inset-0 bg-blue-300/7 blur-[1px] translate-x-[-0.7px] translate-y-[-0.7px]" />
-            <div className="absolute inset-0 bg-red-300/7 blur-[1px] translate-x-[0.7px] translate-y-[0.7px]" />
-          </div>
-
-          {/* Badge pequeña arriba a la derecha con mismo estilo Liquid Glass */}
-          <div className="
-            absolute top-4 right-4 z-50
-            rounded-2xl px-4 py-2
-            bg-white/[0.06] backdrop-blur-3xl
-            border border-white/[0.04]
-            shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.15)]
-          ">
-            <span className="text-white/80 text-xs md:text-sm font-medium tracking-wide">
-              V2.5.0 (Beta)
-            </span>
-          </div>
-
-          <div className="p-8 md:p-10 relative z-40">
-            <div className="text-center mb-6">
-              <div className="relative mx-auto w-64 h-28 md:w-80 md:h-36 mb-3">
-                <Image
-                  src="https://tecnofgb.com/wp-content/uploads/2026/02/logo.png"
-                  alt="GEIA Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-
-              {/* Texto con efecto 3D + Liquid Glass transparente */}
-              <h1 className="
-                text-3xl md:text-4xl font-semibold
-                bg-clip-text text-transparent
-                bg-gradient-to-br from-white/45 to-white/10
-                text-shadow: 
-                  0 1px 1px rgba(0,0,0,0.3),
-                  0 2px 2px rgba(0,0,0,0.25),
-                  0 3px 3px rgba(0,0,0,0.2),
-                  0 4px 4px rgba(0,0,0,0.15),
-                  0 5px 8px rgba(0,0,0,0.1)
-              ">
-                Crea Cuenta en GIA
-              </h1>
-
-              <p className="text-zinc-400 mt-1 text-sm md:text-base font-light">
-                Únete y empieza a usar la plataforma
-              </p>
-            </div>
-
-            <form onSubmit={handleRegister} className="space-y-6">
-              {error && (
-                <div className="
-                  bg-red-500/9 border border-red-400/25 text-red-200/85 rounded-2xl p-4 text-sm
-                  backdrop-blur-xl
-                ">
-                  {error}
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="name" className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
-                  Nombre
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="
-                    w-full px-6 py-4.5 rounded-2xl
-                    bg-white/[0.04] border border-white/[0.06]
-                    text-white placeholder-zinc-400/60 text-base
-                    focus:outline-none focus:border-white/16 focus:ring-2 focus:ring-indigo-400/16 focus:bg-white/[0.055]
-                    transition-all duration-300 ease-out
-                    backdrop-blur-xl shadow-[inset_2px_2px_5px_rgba(0,0,0,0.15),inset_-2px_-2px_5px_rgba(0,0,0,0.15)]
-                  "
-                  placeholder="Tu nombre"
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="
-                    w-full px-6 py-4.5 rounded-2xl
-                    bg-white/[0.04] border border-white/[0.06]
-                    text-white placeholder-zinc-400/60 text-base
-                    focus:outline-none focus:border-white/16 focus:ring-2 focus:ring-indigo-400/16 focus:bg-white/[0.055]
-                    transition-all duration-300 ease-out
-                    backdrop-blur-xl shadow-[inset_2px_2px_5px_rgba(0,0,0,0.15),inset_-2px_-2px_5px_rgba(0,0,0,0.15)]
-                  "
-                  placeholder="tu@email.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm text-zinc-300/70 mb-2 font-medium tracking-wide">
-                  Contraseña
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPass ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="
-                      w-full px-6 py-4.5 rounded-2xl pr-14
-                      bg-white/[0.04] border border-white/[0.06]
-                      text-white placeholder-zinc-400/60 text-base
-                      focus:outline-none focus:border-white/16 focus:ring-2 focus:ring-indigo-400/16 focus:bg-white/[0.055]
-                      transition-all duration-300 ease-out
-                      backdrop-blur-xl shadow-[inset_2px_2px_5px_rgba(0,0,0,0.15),inset_-2px_-2px_5px_rgba(0,0,0,0.15)]
-                    "
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400/65 hover:text-zinc-200 transition-colors duration-300"
-                    aria-label={showPass ? "Ocultar" : "Mostrar"}
-                  >
-                    {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="
-                  w-full py-4.5 rounded-2xl mt-3
-                  bg-gradient-to-r from-blue-600/75 via-indigo-600/75 to-violet-600/75
-                  hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500
-                  disabled:opacity-45 disabled:cursor-not-allowed
-                  text-white font-semibold text-base md:text-lg tracking-wide
-                  flex items-center justify-center gap-3
-                  shadow-[0_10px_35px_rgba(79,70,229,0.35)]
-                  transition-all duration-400 ease-out
-                  hover:scale-[1.012] hover:shadow-[0_18px_55px_rgba(79,70,229,0.45)]
-                  backdrop-blur-md border border-white/6
-                "
-              >
-                <UserPlus size={20} strokeWidth={2.2} />
-                {loading ? 'Creando...' : 'Crear cuenta'}
-              </button>
-            </form>
-
-            <p className="mt-8 text-center text-sm md:text-base text-zinc-400/70">
-              ¿Ya tienes cuenta?{' '}
-              <Link href="/auth/login" className="text-indigo-300/85 hover:text-indigo-200 font-medium transition-colors">
-                Inicia sesión
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}

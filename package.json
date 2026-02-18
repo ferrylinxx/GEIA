@@ -1,6 +1,6 @@
 {
   "name": "geia",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -34,6 +34,7 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
+    "ssh2-sftp-client": "^12.0.1",
     "tesseract.js": "^7.0.0",
     "unified": "^11.0.5",
     "uuid": "^13.0.0",
@@ -48,6 +49,7 @@
     "@types/pdfkit": "^0.17.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ssh2-sftp-client": "^9.0.6",
     "@types/uuid": "^10.0.0",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",

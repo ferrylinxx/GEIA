@@ -84,6 +84,16 @@ export default function WelcomeScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<'admin' | 'user'>('user')
   const [activityStatus, setActivityStatus] = useState<ActivityStatus>('offline')
+  const [toolPermissions, setToolPermissions] = useState({
+    webSearch: true,
+    dbQuery: true,
+    networkDriveRag: true,
+    imageGeneration: true,
+    deepResearch: true,
+    documentGeneration: true,
+    spreadsheetAnalysis: true,
+    codeInterpreter: true,
+  })
   const mountedRef = useRef(true)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -202,6 +212,22 @@ export default function WelcomeScreen() {
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Load tool permissions on mount
+  useEffect(() => {
+    const loadToolPermissions = async () => {
+      try {
+        const res = await fetch('/api/tools/permissions')
+        if (res.ok) {
+          const data = await res.json()
+          setToolPermissions(data.tools)
+        }
+      } catch (error) {
+        console.error('Error loading tool permissions:', error)
+      }
+    }
+    void loadToolPermissions()
   }, [])
 
   const activeToolsCount = [webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis].filter(Boolean).length
@@ -691,49 +717,63 @@ export default function WelcomeScreen() {
                     {t.chatInput.attachFile}
                   </button>
                   <hr className="border-zinc-200/60 my-1 mx-2" />
-                  <button onClick={() => { setWebSearch(!webSearch) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${webSearch ? 'bg-blue-50 text-blue-700 shadow-sm shadow-blue-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-blue-50/30'}`}>
-                    <Globe size={16} className={webSearch ? 'text-blue-500' : 'text-blue-400'} />
-                    {t.chatInput.webSearch}
-                    {webSearch && <Check size={14} className="ml-auto text-blue-500" />}
-                  </button>
-                  <button onClick={() => { setDbQuery(!dbQuery) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${dbQuery ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-indigo-50/80 hover:to-indigo-50/30'}`}>
-                    <Database size={16} className={dbQuery ? 'text-indigo-500' : 'text-indigo-400'} />
-                    {t.chatInput.database}
-                    {dbQuery && <Check size={14} className="ml-auto text-indigo-500" />}
-                  </button>
-                  <button onClick={() => { setNetworkDriveRag(!networkDriveRag) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${networkDriveRag ? 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-emerald-50/80 hover:to-emerald-50/30'}`}>
-                    <HardDrive size={16} className={networkDriveRag ? 'text-emerald-500' : 'text-emerald-400'} />
-                    {t.chatInput.networkDrive}
-                    {networkDriveRag && <Check size={14} className="ml-auto text-emerald-500" />}
-                  </button>
-                  <button onClick={() => { setImageGeneration(!imageGeneration) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${imageGeneration ? 'bg-purple-50 text-purple-700 shadow-sm shadow-purple-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-purple-50/80 hover:to-purple-50/30'}`}>
-                    <ImagePlus size={16} className={imageGeneration ? 'text-purple-500' : 'text-purple-400'} />
-                    {t.chatInput.generateImage}
-                    {imageGeneration && <Check size={14} className="ml-auto text-purple-500" />}
-                  </button>
+                  {toolPermissions.webSearch && (
+                    <button onClick={() => { setWebSearch(!webSearch) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${webSearch ? 'bg-blue-50 text-blue-700 shadow-sm shadow-blue-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-blue-50/30'}`}>
+                      <Globe size={16} className={webSearch ? 'text-blue-500' : 'text-blue-400'} />
+                      {t.chatInput.webSearch}
+                      {webSearch && <Check size={14} className="ml-auto text-blue-500" />}
+                    </button>
+                  )}
+                  {toolPermissions.dbQuery && (
+                    <button onClick={() => { setDbQuery(!dbQuery) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${dbQuery ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-indigo-50/80 hover:to-indigo-50/30'}`}>
+                      <Database size={16} className={dbQuery ? 'text-indigo-500' : 'text-indigo-400'} />
+                      {t.chatInput.database}
+                      {dbQuery && <Check size={14} className="ml-auto text-indigo-500" />}
+                    </button>
+                  )}
+                  {toolPermissions.networkDriveRag && (
+                    <button onClick={() => { setNetworkDriveRag(!networkDriveRag) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${networkDriveRag ? 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-emerald-50/80 hover:to-emerald-50/30'}`}>
+                      <HardDrive size={16} className={networkDriveRag ? 'text-emerald-500' : 'text-emerald-400'} />
+                      {t.chatInput.networkDrive}
+                      {networkDriveRag && <Check size={14} className="ml-auto text-emerald-500" />}
+                    </button>
+                  )}
+                  {toolPermissions.imageGeneration && (
+                    <button onClick={() => { setImageGeneration(!imageGeneration) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${imageGeneration ? 'bg-purple-50 text-purple-700 shadow-sm shadow-purple-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-purple-50/80 hover:to-purple-50/30'}`}>
+                      <ImagePlus size={16} className={imageGeneration ? 'text-purple-500' : 'text-purple-400'} />
+                      {t.chatInput.generateImage}
+                      {imageGeneration && <Check size={14} className="ml-auto text-purple-500" />}
+                    </button>
+                  )}
                   <hr className="border-zinc-200/60 my-1 mx-2" />
-                  <button onClick={() => { setDeepResearch(!deepResearch); if (!deepResearch) setWebSearch(true) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${deepResearch ? 'bg-amber-50 text-amber-700 shadow-sm shadow-amber-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-amber-50/80 hover:to-amber-50/30'}`}>
-                    <FlaskConical size={16} className={deepResearch ? 'text-amber-500' : 'text-amber-400'} />
-                    {t.chatInput.deepResearch}
-                    {deepResearch && <Check size={14} className="ml-auto text-amber-500" />}
-                  </button>
-                  <button onClick={() => { setDocumentGeneration(!documentGeneration) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${documentGeneration ? 'bg-sky-50 text-sky-700 shadow-sm shadow-sky-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-sky-50/80 hover:to-sky-50/30'}`}>
-                    <FileText size={16} className={documentGeneration ? 'text-sky-500' : 'text-sky-400'} />
-                    {t.chatInput.generateDocument}
-                    {documentGeneration && <Check size={14} className="ml-auto text-sky-500" />}
-                  </button>
-                  <button onClick={() => { setSpreadsheetAnalysis(!spreadsheetAnalysis) }}
-                    className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${spreadsheetAnalysis ? 'bg-cyan-50 text-cyan-700 shadow-sm shadow-cyan-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:to-cyan-50/30'}`}>
-                    <BarChart3 size={16} className={spreadsheetAnalysis ? 'text-cyan-500' : 'text-cyan-400'} />
-                    {t.chatInput.spreadsheetAnalysis}
-                    {spreadsheetAnalysis && <Check size={14} className="ml-auto text-cyan-500" />}
-                  </button>
+                  {toolPermissions.deepResearch && (
+                    <button onClick={() => { setDeepResearch(!deepResearch); if (!deepResearch) setWebSearch(true) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${deepResearch ? 'bg-amber-50 text-amber-700 shadow-sm shadow-amber-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-amber-50/80 hover:to-amber-50/30'}`}>
+                      <FlaskConical size={16} className={deepResearch ? 'text-amber-500' : 'text-amber-400'} />
+                      {t.chatInput.deepResearch}
+                      {deepResearch && <Check size={14} className="ml-auto text-amber-500" />}
+                    </button>
+                  )}
+                  {toolPermissions.documentGeneration && (
+                    <button onClick={() => { setDocumentGeneration(!documentGeneration) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${documentGeneration ? 'bg-sky-50 text-sky-700 shadow-sm shadow-sky-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-sky-50/80 hover:to-sky-50/30'}`}>
+                      <FileText size={16} className={documentGeneration ? 'text-sky-500' : 'text-sky-400'} />
+                      {t.chatInput.generateDocument}
+                      {documentGeneration && <Check size={14} className="ml-auto text-sky-500" />}
+                    </button>
+                  )}
+                  {toolPermissions.spreadsheetAnalysis && (
+                    <button onClick={() => { setSpreadsheetAnalysis(!spreadsheetAnalysis) }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] flex items-center gap-3 transition-all duration-150 rounded-xl font-medium ${spreadsheetAnalysis ? 'bg-cyan-50 text-cyan-700 shadow-sm shadow-cyan-100' : 'text-zinc-700 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:to-cyan-50/30'}`}>
+                      <BarChart3 size={16} className={spreadsheetAnalysis ? 'text-cyan-500' : 'text-cyan-400'} />
+                      {t.chatInput.spreadsheetAnalysis}
+                      {spreadsheetAnalysis && <Check size={14} className="ml-auto text-cyan-500" />}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

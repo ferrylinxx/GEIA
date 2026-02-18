@@ -6,6 +6,8 @@ import { AIProvider, ModelConfig, DbConnection, DbSchemaTable, NetworkDrive, Ban
 import { createClient } from '@/lib/supabase/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import RolesManagement from './RolesManagement'
+import ToolsManagement from './ToolsManagement'
 import {
   ArrowLeft, Users, Bot, Plug, Trash2, Edit3, Plus, Eye, EyeOff,
   ArrowUp, ArrowDown, Shield, Loader2, Save, X, Check,
@@ -13,7 +15,7 @@ import {
   MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle
 } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents'
+type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents'
 
 interface UserRow {
   id: string
@@ -164,6 +166,27 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const iconInputRef = useRef<HTMLInputElement>(null)
 
+  // Roles for model permissions
+  const [availableRoles, setAvailableRoles] = useState<{ id: string; name: string }[]>([])
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [showRolesDropdown, setShowRolesDropdown] = useState(false)
+  const [allRoles, setAllRoles] = useState<{ id: string; name: string }[]>([]) // For user role selector
+
+  // Create User Modal
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false)
+  const [createUserForm, setCreateUserForm] = useState({ email: '', name: '', role: 'user', password: '' })
+  const [creatingUser, setCreatingUser] = useState(false)
+  const [createdUserCredentials, setCreatedUserCredentials] = useState<{ email: string; temporaryPassword: string; resetLink: string; emailSent?: boolean } | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Roles for other resources
+  const [selectedConnRoles, setSelectedConnRoles] = useState<string[]>([])
+  const [showConnRolesDropdown, setShowConnRolesDropdown] = useState(false)
+  const [selectedDriveRoles, setSelectedDriveRoles] = useState<string[]>([])
+  const [showDriveRolesDropdown, setShowDriveRolesDropdown] = useState(false)
+  const [selectedAgentRoles, setSelectedAgentRoles] = useState<string[]>([])
+  const [showAgentRolesDropdown, setShowAgentRolesDropdown] = useState(false)
+
   // DB Connections
   const [connections, setConnections] = useState<DbConnection[]>([])
   const [showConnForm, setShowConnForm] = useState(false)
@@ -176,9 +199,22 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [networkDrives, setNetworkDrives] = useState<NetworkDrive[]>([])
   const [showDriveForm, setShowDriveForm] = useState(false)
   const [editingDrive, setEditingDrive] = useState<NetworkDrive | null>(null)
-  const [driveForm, setDriveForm] = useState({ name: '', unc_path: '', description: '', file_extensions: 'pdf,docx,xlsx,pptx,txt,csv,md,json,xml,html,doc,xls,ppt,rtf,log', max_file_size_mb: 50 })
+  const [driveForm, setDriveForm] = useState({
+    name: '',
+    unc_path: '',
+    description: '',
+    file_extensions: 'pdf,docx,xlsx,pptx,txt,csv,md,json,xml,html,doc,xls,ppt,rtf,log',
+    max_file_size_mb: 50,
+    connection_type: 'smb' as 'smb' | 'sftp',
+    sftp_host: '',
+    sftp_port: 22,
+    sftp_username: '',
+    sftp_password: ''
+  })
   const [syncingDrive, setSyncingDrive] = useState<string | null>(null)
   const [syncResult, setSyncResult] = useState<Record<string, unknown> | null>(null)
+  const [testingSFTP, setTestingSFTP] = useState(false)
+  const [sftpTestResult, setSftpTestResult] = useState<{ success: boolean; message: string; details?: any } | null>(null)
 
   // Banners
   const [banners, setBanners] = useState<Banner[]>([])
@@ -252,7 +288,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     { value: 'custom', label: 'Custom (OpenAI Compatible)', url: '' },
   ]
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    loadData()
+    loadRoles() // Load roles for user selector
+  }, [])
 
   const loadData = async () => {
     setLoading(true)
@@ -283,6 +322,19 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       }
     } finally {
       setBannersLoading(false)
+    }
+  }
+
+  const loadRoles = async () => {
+    try {
+      const res = await fetch('/api/admin/roles')
+      if (res.ok) {
+        const data = await res.json()
+        setAvailableRoles(data.roles || [])
+        setAllRoles(data.roles || []) // Also set for user role selector
+      }
+    } catch (e) {
+      console.error('Failed to load roles', e)
     }
   }
 
@@ -351,6 +403,35 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     }
   }
 
+  const saveAgentPermissions = async (agentId: string) => {
+    try {
+      // Delete existing permissions
+      await fetch('/api/admin/roles/permissions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource_type: 'agent', resource_id: agentId })
+      })
+
+      // If roles are selected, create new permissions
+      if (selectedAgentRoles.length > 0) {
+        const permissions = selectedAgentRoles.map(roleId => ({
+          role_id: roleId,
+          resource_type: 'agent',
+          resource_id: agentId,
+          can_view: true
+        }))
+
+        await fetch('/api/admin/roles/permissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ permissions })
+        })
+      }
+    } catch (e) {
+      console.error('Failed to save agent permissions', e)
+    }
+  }
+
   const saveAgent = async () => {
     try {
       const method = selectedAgent ? 'PATCH' : 'POST'
@@ -365,6 +446,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       })
 
       if (res.ok) {
+        const data = await res.json()
+        const agentId = selectedAgent ? selectedAgent.id : data.agent.id
+        await saveAgentPermissions(agentId)
+
         showStatus(selectedAgent ? 'Agente actualizado' : 'Agente creado')
         setAgentSubTab('list')
         setSelectedAgent(null)
@@ -386,7 +471,8 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     }
   }
 
-  const editAgent = (agent: any) => {
+  const editAgent = async (agent: any) => {
+    await loadRoles()
     setSelectedAgent(agent)
     setAgentForm({
       name: agent.name,
@@ -396,6 +482,19 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       schedule_type: agent.schedule_type,
       schedule_config: agent.schedule_config || {},
     })
+
+    // Load existing permissions
+    try {
+      const res = await fetch(`/api/admin/roles/permissions?resource_type=agent&resource_id=${agent.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        const roleIds = data.permissions?.map((p: any) => p.role_id) || []
+        setSelectedAgentRoles(roleIds)
+      }
+    } catch (e) {
+      console.error('Failed to load agent permissions', e)
+    }
+
     setAgentSubTab('create')
   }
 
@@ -655,6 +754,45 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     setSaving(false)
   }
 
+  const createNewUser = async () => {
+    if (!createUserForm.email || !createUserForm.name) {
+      alert('Por favor completa todos los campos')
+      return
+    }
+    setCreatingUser(true)
+    try {
+      const res = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createUserForm),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        // Only show credentials modal if temporary password was generated
+        if (data.temporaryPassword) {
+          setCreatedUserCredentials({
+            email: data.user.email,
+            temporaryPassword: data.temporaryPassword,
+            resetLink: data.resetLink,
+            emailSent: data.emailSent,
+          })
+        } else {
+          // Custom password was used, just show success message
+          showStatus(data.message || 'Usuario creado correctamente')
+          setShowCreateUserModal(false)
+        }
+        await loadData() // Reload all data including users list
+        setCreateUserForm({ email: '', name: '', role: 'user', password: '' })
+      } else {
+        alert(data.error || 'Error al crear usuario')
+      }
+    } catch (error) {
+      console.error('Error creating user:', error)
+      alert('Error al crear usuario')
+    }
+    setCreatingUser(false)
+  }
+
   const statusInfo = (status?: 'online' | 'idle' | 'offline') => {
     if (status === 'online') return { label: 'En linea', dot: 'bg-emerald-500', text: 'text-emerald-600' }
     if (status === 'idle') return { label: 'Ausente', dot: 'bg-amber-500', text: 'text-amber-600' }
@@ -811,15 +949,32 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
 
   // === MODEL MANAGEMENT ===
-  const openModelForm = (m?: ModelConfig) => {
+  const openModelForm = async (m?: ModelConfig) => {
+    // Load roles first
+    await loadRoles()
+
     if (m) {
       setEditingModel(m)
       setModelForm({ provider_id: m.provider_id, model_id: m.model_id, display_name: m.display_name, description: m.description, icon_url: m.icon_url, system_prompt: m.system_prompt, is_visible: m.is_visible, sort_order: m.sort_order, max_tokens: m.max_tokens, use_max_tokens: m.use_max_tokens ?? false, supports_streaming: m.supports_streaming, supports_vision: m.supports_vision })
       setIconPreview(m.icon_url || '')
+
+      // Load existing permissions for this model
+      try {
+        const res = await fetch(`/api/admin/roles/permissions?resource_type=model&resource_id=${m.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const roleIds = data.permissions?.map((p: { role_id: string }) => p.role_id) || []
+          setSelectedRoles(roleIds)
+        }
+      } catch (e) {
+        console.error('Failed to load model permissions', e)
+        setSelectedRoles([])
+      }
     } else {
       setEditingModel(null)
       setModelForm({ provider_id: providers[0]?.id || '', model_id: '', display_name: '', description: '', icon_url: '', system_prompt: '', is_visible: true, sort_order: models.length, max_tokens: 4096, use_max_tokens: false, supports_streaming: true, supports_vision: false })
       setIconPreview('')
+      setSelectedRoles([])
     }
     setIconFile(null)
     setShowModelForm(true)
@@ -846,14 +1001,62 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
   const saveModel = async () => {
     setSaving(true)
-    // Upload icon if a new file was selected
-    const finalIconUrl = await uploadIcon()
-    const formData = { ...modelForm, icon_url: finalIconUrl }
-    const method = editingModel ? 'PATCH' : 'POST'
-    const body = editingModel ? { id: editingModel.id, ...formData } : formData
-    const res = await fetch('/api/admin/models', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (res.ok) { await loadData(); setShowModelForm(false); setIconFile(null); setIconPreview(''); showStatus(editingModel ? 'Modelo actualizado' : 'Modelo creado') }
-    setSaving(false)
+    try {
+      // Upload icon if a new file was selected
+      const finalIconUrl = await uploadIcon()
+      const formData = { ...modelForm, icon_url: finalIconUrl }
+      const method = editingModel ? 'PATCH' : 'POST'
+      const body = editingModel ? { id: editingModel.id, ...formData } : formData
+      const res = await fetch('/api/admin/models', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
+      if (res.ok) {
+        const data = await res.json()
+        const modelId = editingModel ? editingModel.id : data.model?.id
+
+        // Save permissions if model was saved successfully
+        if (modelId) {
+          await saveModelPermissions(modelId)
+        }
+
+        await loadData()
+        setShowModelForm(false)
+        setIconFile(null)
+        setIconPreview('')
+        setSelectedRoles([])
+        showStatus(editingModel ? 'Modelo actualizado' : 'Modelo creado')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveModelPermissions = async (modelId: string) => {
+    try {
+      // Delete existing permissions for this model
+      await fetch('/api/admin/roles/permissions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource_type: 'model', resource_id: modelId })
+      })
+
+      // If roles are selected, create new permissions
+      if (selectedRoles.length > 0) {
+        const permissions = selectedRoles.map(roleId => ({
+          role_id: roleId,
+          resource_type: 'model',
+          resource_id: modelId,
+          can_view: true
+        }))
+
+        await fetch('/api/admin/roles/permissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ permissions })
+        })
+      }
+    } catch (e) {
+      console.error('Failed to save model permissions', e)
+    }
   }
   const deleteModel = async (id: string) => {
     const res = await fetch('/api/admin/models', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
@@ -877,22 +1080,73 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
 
   // === DB CONNECTIONS MANAGEMENT ===
-  const openConnForm = (c?: DbConnection) => {
+  const openConnForm = async (c?: DbConnection) => {
+    await loadRoles()
+
     if (c) {
       setEditingConn(c)
       setConnForm({ name: c.name, description: c.description, db_type: c.db_type, host: c.host, port: c.port, database_name: c.database_name, username: c.username, password: c.password })
+
+      // Load existing permissions
+      try {
+        const res = await fetch(`/api/admin/roles/permissions?resource_type=db_connection&resource_id=${c.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const roleIds = data.permissions?.map((p: any) => p.role_id) || []
+          setSelectedConnRoles(roleIds)
+        }
+      } catch (e) {
+        console.error('Failed to load connection permissions', e)
+      }
     } else {
       setEditingConn(null)
       setConnForm({ name: '', description: '', db_type: 'mssql', host: '', port: 1433, database_name: '', username: '', password: '' })
+      setSelectedConnRoles([])
     }
     setShowConnForm(true)
   }
+  const saveConnectionPermissions = async (connId: string) => {
+    try {
+      // Delete existing permissions
+      await fetch('/api/admin/roles/permissions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource_type: 'db_connection', resource_id: connId })
+      })
+
+      // If roles are selected, create new permissions
+      if (selectedConnRoles.length > 0) {
+        const permissions = selectedConnRoles.map(roleId => ({
+          role_id: roleId,
+          resource_type: 'db_connection',
+          resource_id: connId,
+          can_view: true
+        }))
+
+        await fetch('/api/admin/roles/permissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ permissions })
+        })
+      }
+    } catch (e) {
+      console.error('Failed to save connection permissions', e)
+    }
+  }
+
   const saveConnection = async () => {
     setSaving(true)
     const method = editingConn ? 'PATCH' : 'POST'
     const body = editingConn ? { id: editingConn.id, ...connForm } : connForm
     const res = await fetch('/api/admin/db-connections', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (res.ok) { await loadData(); setShowConnForm(false); showStatus(editingConn ? 'Conexion actualizada' : 'Conexion creada') }
+    if (res.ok) {
+      const data = await res.json()
+      const connId = editingConn ? editingConn.id : data.connection.id
+      await saveConnectionPermissions(connId)
+      await loadData()
+      setShowConnForm(false)
+      showStatus(editingConn ? 'Conexion actualizada' : 'Conexion creada')
+    }
     else { const d = await res.json(); showStatus(d.error || 'Error') }
     setSaving(false)
   }
@@ -915,16 +1169,115 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
 
   // Network drive management functions
-  const openDriveForm = (drive?: NetworkDrive) => {
+  const openDriveForm = async (drive?: NetworkDrive) => {
+    await loadRoles()
+
     if (drive) {
       setEditingDrive(drive)
-      setDriveForm({ name: drive.name, unc_path: drive.unc_path, description: drive.description || '', file_extensions: drive.file_extensions?.join(',') || '', max_file_size_mb: drive.max_file_size_mb || 50 })
+      setDriveForm({
+        name: drive.name,
+        unc_path: drive.unc_path,
+        description: drive.description || '',
+        file_extensions: drive.file_extensions?.join(',') || '',
+        max_file_size_mb: drive.max_file_size_mb || 50,
+        connection_type: drive.connection_type || 'smb',
+        sftp_host: drive.sftp_host || '',
+        sftp_port: drive.sftp_port || 22,
+        sftp_username: drive.sftp_username || '',
+        sftp_password: drive.sftp_password || ''
+      })
+
+      // Load existing permissions
+      try {
+        const res = await fetch(`/api/admin/roles/permissions?resource_type=network_drive&resource_id=${drive.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const roleIds = data.permissions?.map((p: any) => p.role_id) || []
+          setSelectedDriveRoles(roleIds)
+        }
+      } catch (e) {
+        console.error('Failed to load drive permissions', e)
+      }
     } else {
       setEditingDrive(null)
-      setDriveForm({ name: '', unc_path: '', description: '', file_extensions: 'pdf,docx,xlsx,pptx,txt,csv,md,json,xml,html,doc,xls,ppt,rtf,log', max_file_size_mb: 50 })
+      setDriveForm({
+        name: '',
+        unc_path: '',
+        description: '',
+        file_extensions: 'pdf,docx,xlsx,pptx,txt,csv,md,json,xml,html,doc,xls,ppt,rtf,log',
+        max_file_size_mb: 50,
+        connection_type: 'smb',
+        sftp_host: '',
+        sftp_port: 22,
+        sftp_username: '',
+        sftp_password: ''
+      })
+      setSelectedDriveRoles([])
     }
     setShowDriveForm(true)
   }
+
+  const saveDrivePermissions = async (driveId: string) => {
+    try {
+      // Delete existing permissions
+      await fetch('/api/admin/roles/permissions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource_type: 'network_drive', resource_id: driveId })
+      })
+
+      // If roles are selected, create new permissions
+      if (selectedDriveRoles.length > 0) {
+        const permissions = selectedDriveRoles.map(roleId => ({
+          role_id: roleId,
+          resource_type: 'network_drive',
+          resource_id: driveId,
+          can_view: true
+        }))
+
+        await fetch('/api/admin/roles/permissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ permissions })
+        })
+      }
+    } catch (e) {
+      console.error('Failed to save drive permissions', e)
+    }
+  }
+
+  const testSFTPConnection = async () => {
+    setTestingSFTP(true)
+    setSftpTestResult(null)
+    try {
+      const res = await fetch('/api/admin/network-drives/test-sftp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sftp_host: driveForm.sftp_host,
+          sftp_port: driveForm.sftp_port,
+          sftp_username: driveForm.sftp_username,
+          sftp_password: driveForm.sftp_password,
+          unc_path: driveForm.unc_path || '/'
+        })
+      })
+      const data = await res.json()
+      setSftpTestResult(data)
+      if (data.success) {
+        showStatus('✅ Conexión SFTP exitosa')
+      } else {
+        showStatus('❌ Error de conexión SFTP')
+      }
+    } catch (err) {
+      setSftpTestResult({
+        success: false,
+        message: 'Error al probar la conexión',
+        details: { error_message: err instanceof Error ? err.message : 'Error desconocido' }
+      })
+    }
+    setTestingSFTP(false)
+  }
+
   const saveDrive = async () => {
     setSaving(true)
     const method = editingDrive ? 'PATCH' : 'POST'
@@ -935,9 +1288,21 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       description: driveForm.description,
       file_extensions: driveForm.file_extensions.split(',').map(e => e.trim()).filter(Boolean),
       max_file_size_mb: driveForm.max_file_size_mb,
+      connection_type: driveForm.connection_type,
+      sftp_host: driveForm.connection_type === 'sftp' ? driveForm.sftp_host : null,
+      sftp_port: driveForm.connection_type === 'sftp' ? driveForm.sftp_port : null,
+      sftp_username: driveForm.connection_type === 'sftp' ? driveForm.sftp_username : null,
+      sftp_password: driveForm.connection_type === 'sftp' ? driveForm.sftp_password : null,
     }
     const res = await fetch('/api/admin/network-drives', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    if (res.ok) { await loadData(); setShowDriveForm(false); showStatus(editingDrive ? 'Unidad actualizada' : 'Unidad creada') }
+    if (res.ok) {
+      const data = await res.json()
+      const driveId = editingDrive ? editingDrive.id : data.drive.id
+      await saveDrivePermissions(driveId)
+      await loadData()
+      setShowDriveForm(false)
+      showStatus(editingDrive ? 'Unidad actualizada' : 'Unidad creada')
+    }
     else { const d = await res.json(); showStatus(d.error || 'Error') }
     setSaving(false)
   }
@@ -1065,6 +1430,8 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const tabs: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <Shield size={16} /> },
     { id: 'users', label: 'Usuarios', icon: <Users size={16} /> },
+    { id: 'roles', label: 'Roles y Permisos', icon: <Crown size={16} /> },
+    { id: 'tools', label: 'Herramientas', icon: <Code2 size={16} /> },
     { id: 'models', label: 'Modelos', icon: <Bot size={16} /> },
     { id: 'providers', label: 'Proveedores IA', icon: <Plug size={16} /> },
     { id: 'connections', label: 'Conexiones BD', icon: <Database size={16} /> },
@@ -1075,90 +1442,145 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     { id: 'banners', label: 'Banners', icon: <Megaphone size={16} /> },
   ]
 
-  return (
-    <div className="admin-glass min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/40">
+  function renderMainContent() {
+    return (
+      <div className="admin-glass min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/40">
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-18%] left-[-12%] w-[720px] h-[720px] rounded-full bg-gradient-to-br from-blue-400/45 to-cyan-300/35 blur-[90px]" style={{ animation: 'welcome-blob-1 12s ease-in-out infinite' }} />
         <div className="absolute top-[10%] right-[-18%] w-[680px] h-[680px] rounded-full bg-gradient-to-br from-violet-400/35 to-fuchsia-300/30 blur-[88px]" style={{ animation: 'welcome-blob-2 15s ease-in-out infinite' }} />
         <div className="absolute bottom-[-14%] left-[15%] w-[640px] h-[640px] rounded-full bg-gradient-to-br from-indigo-400/35 to-purple-300/28 blur-[82px]" style={{ animation: 'welcome-blob-3 13s ease-in-out infinite' }} />
       </div>
-      {/* Header */}
-      <header className="liquid-glass-header px-6 py-3 flex items-center gap-3 sticky top-0 z-20">
-        <button onClick={() => router.push('/chat')} className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 transition-colors"><ArrowLeft size={18} /></button>
-        <Shield size={20} className="text-purple-500" />
-        <h1 className="text-base font-semibold text-zinc-800">Panel de Administracion</h1>
+
+      {/* Header - Mejorado y Responsive */}
+      <header className="liquid-glass-header px-4 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-zinc-200/50 shadow-sm">
+        <button onClick={() => router.push('/chat')} className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 hover:text-zinc-900 transition-all duration-200 hover:scale-105">
+          <ArrowLeft size={18} />
+        </button>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+            <Shield size={18} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-sm md:text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Panel Admin
+            </h1>
+            <p className="text-[10px] md:text-xs text-zinc-500 hidden sm:block">Gestión del sistema</p>
+          </div>
+        </div>
         <div className="flex-1" />
         {statusMsg && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 animate-in">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 animate-in shadow-sm">
             <Check size={14} /> {statusMsg}
           </div>
         )}
       </header>
 
       <div className="flex relative z-10">
-        {/* Sidebar tabs */}
-        <nav className="w-56 liquid-glass-sidebar min-h-[calc(100vh-49px)] p-3 space-y-1">
+        {/* Sidebar tabs - Mejorado y Responsive */}
+        <nav className="hidden lg:flex lg:flex-col w-72 liquid-glass-sidebar min-h-[calc(100vh-65px)] p-6 space-y-2 bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-xl border-r border-zinc-200/50 shadow-xl">
+          <div className="mb-6 pb-6 border-b border-zinc-200/50">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Navegación
+            </h2>
+            <p className="text-xs text-zinc-500 mt-1">Gestión del sistema</p>
+          </div>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-2.5 transition-colors ${tab === t.id ? 'bg-zinc-100 text-zinc-900 font-medium' : 'text-zinc-500 hover:bg-zinc-50'}`}>
-              {t.icon} {t.label}
+              className={`w-full text-left px-4 py-3.5 text-sm rounded-xl flex items-center gap-3 transition-all duration-200 ${
+                tab === t.id
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30 scale-[1.02]'
+                  : 'text-zinc-600 hover:bg-zinc-100/80 hover:text-zinc-900 hover:scale-[1.01] font-medium'
+              }`}>
+              <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
+                {t.icon}
+              </div>
+              {t.label}
             </button>
           ))}
         </nav>
 
-        {/* Content */}
-        <main className="flex-1 p-6 max-w-6xl">
+        {/* Mobile Navigation - Horizontal Scroll */}
+        <div className="lg:hidden w-full sticky top-[57px] md:top-[65px] z-20 bg-white/90 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm">
+          <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl whitespace-nowrap transition-all duration-200 ${
+                  tab === t.id
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30'
+                    : 'bg-white text-zinc-600 hover:bg-zinc-100 font-medium border border-zinc-200'
+                }`}>
+                <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
+                  {t.icon}
+                </div>
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content - Responsive */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-zinc-400" size={28} /></div>
           ) : (
             <>
-              {/* DASHBOARD TAB */}
+              {/* DASHBOARD TAB - Mejorado y Responsive */}
               {tab === 'dashboard' && (
                 <div>
-                  <h2 className="text-lg font-semibold text-zinc-800 mb-4">Dashboard</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                  <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-6">
+                    Dashboard General
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
                     {statCards.map(s => (
-                      <div key={s.label} className="liquid-glass-card rounded-xl p-4">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${s.color}`}>{s.icon}</div>
-                        <p className="text-2xl font-bold text-zinc-800">{s.value.toLocaleString()}</p>
-                        <p className="text-xs text-zinc-500">{s.label}</p>
+                      <div key={s.label} className="liquid-glass-card rounded-xl p-4 md:p-5 hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer">
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center mb-3 shadow-lg ${s.color}`}>{s.icon}</div>
+                        <p className="text-xl md:text-2xl font-bold text-zinc-800">{s.value.toLocaleString()}</p>
+                        <p className="text-xs md:text-sm text-zinc-500 font-medium">{s.label}</p>
                       </div>
                     ))}
                   </div>
 
-                  {/* Storage Statistics */}
+                  {/* Storage Statistics - Mejorado y Responsive */}
                   {storageStats && (
                     <div className="mt-6">
-                      <h3 className="text-base font-semibold text-zinc-800 mb-3">Estadísticas de Storage</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <h3 className="text-base md:text-lg font-bold text-zinc-800 mb-4">📊 Estadísticas de Storage</h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                         {/* Total Storage Card */}
-                        <div className="liquid-glass-card rounded-xl p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                              <HardDrive size={20} className="text-blue-600" />
+                        <div className="liquid-glass-card rounded-xl p-5 md:p-6 hover:shadow-xl transition-all duration-200">
+                          <div className="flex items-center gap-4 mb-3">
+                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                              <HardDrive size={24} className="text-white" />
                             </div>
                             <div>
-                              <p className="text-2xl font-bold text-zinc-800">{formatBytes(storageStats.total)}</p>
-                              <p className="text-xs text-zinc-500">Storage total utilizado</p>
+                              <p className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                {formatBytes(storageStats.total)}
+                              </p>
+                              <p className="text-xs md:text-sm text-zinc-500 font-medium">Storage total utilizado</p>
                             </div>
                           </div>
                         </div>
 
                         {/* Top Users by Storage */}
-                        <div className="liquid-glass-card rounded-xl p-4">
-                          <h4 className="text-sm font-semibold text-zinc-700 mb-3">Top usuarios por storage</h4>
-                          <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                            {storageStats.by_user.slice(0, 10).map((user) => (
-                              <div key={user.user_id} className="flex items-center justify-between text-xs">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-zinc-700 font-medium truncate">
-                                    {user.user_name || user.user_id}
-                                  </p>
-                                  <p className="text-zinc-400">{user.file_count} archivos</p>
+                        <div className="liquid-glass-card rounded-xl p-5 md:p-6 hover:shadow-xl transition-all duration-200">
+                          <h4 className="text-sm md:text-base font-bold text-zinc-700 mb-4 flex items-center gap-2">
+                            <Users size={18} className="text-blue-600" />
+                            Top usuarios por storage
+                          </h4>
+                          <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                            {storageStats.by_user.slice(0, 10).map((user, idx) => (
+                              <div key={user.user_id} className="flex items-center justify-between text-xs md:text-sm p-2 rounded-lg hover:bg-white/60 transition-colors">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <span className="text-zinc-400 font-bold text-xs w-5">#{idx + 1}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-zinc-700 font-semibold truncate">
+                                      {user.user_name || user.user_id}
+                                    </p>
+                                    <p className="text-zinc-400 text-xs">{user.file_count} archivos</p>
+                                  </div>
                                 </div>
-                                <div className="text-right ml-2">
-                                  <p className="text-zinc-800 font-semibold">{formatBytes(user.size)}</p>
-                                  <p className="text-zinc-400">
+                                <div className="text-right ml-3">
+                                  <p className="text-zinc-800 font-bold">{formatBytes(user.size)}</p>
+                                  <p className="text-blue-600 text-xs font-medium">
                                     {((user.size / storageStats.total) * 100).toFixed(1)}%
                                   </p>
                                 </div>
@@ -1174,6 +1596,12 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
               {/* USERS TAB */}
               {tab === 'users' && renderUsersTab()}
+
+              {/* ROLES TAB */}
+              {tab === 'roles' && renderRolesTab()}
+
+              {/* TOOLS TAB */}
+              {tab === 'tools' && <ToolsManagement />}
 
               {/* MODELS TAB */}
               {tab === 'models' && renderModelsTab()}
@@ -1340,20 +1768,34 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         </div>
       )}
     </div>
-  )
+    )
+  }
 
   // ======= RENDER FUNCTIONS =======
 
   function renderUsersTab() {
     return (
       <div>
-        <h2 className="text-lg font-semibold text-zinc-800 mb-4">Usuarios ({users.length})</h2>
-        <div className="liquid-glass-card rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-zinc-50 border-b border-zinc-200">
-                <th className="text-left px-4 py-2.5 text-xs text-zinc-500 font-medium">Usuario</th>
-                <th className="text-left px-4 py-2.5 text-xs text-zinc-500 font-medium">Email</th>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Usuarios ({users.length})
+          </h2>
+          <button
+            onClick={() => setShowCreateUserModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg hover:shadow-xl"
+          >
+            <Plus size={16} />
+            Crear Usuario
+          </button>
+        </div>
+        <div className="liquid-glass-card rounded-xl overflow-hidden shadow-lg">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-zinc-50 to-zinc-100/50 border-b border-zinc-200">
+                  <th className="text-left px-4 py-3 text-xs text-zinc-600 font-semibold">Usuario</th>
+                  <th className="text-left px-4 py-3 text-xs text-zinc-600 font-semibold">Email</th>
                 <th className="text-left px-4 py-2.5 text-xs text-zinc-500 font-medium">Actividad</th>
                 <th className="text-left px-4 py-2.5 text-xs text-zinc-500 font-medium">Rol</th>
                 <th className="text-left px-4 py-2.5 text-xs text-zinc-500 font-medium">Creado</th>
@@ -1410,8 +1852,9 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                   <td className="px-4 py-3">
                     {editingUser === u.id ? (
                       <select value={editRole} onChange={e => setEditRole(e.target.value)} className="px-2 py-1 border border-zinc-300 rounded text-sm">
-                        <option value="user">user</option>
-                        <option value="admin">admin</option>
+                        {allRoles.map(role => (
+                          <option key={role.id} value={role.name}>{role.name}</option>
+                        ))}
                       </select>
                     ) : (
                       <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${isAdmin ? 'bg-purple-50 text-purple-600' : 'bg-zinc-100 text-zinc-500'}`}>{u.role}</span>
@@ -1460,34 +1903,144 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               })}
             </tbody>
           </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-zinc-200">
+            {users.map(u => {
+              const status = statusInfo(u.activity_status)
+              const lastSeen = formatLastSeen(u.activity_last_seen_at)
+              const initials = (u.name || u.email || 'U').trim().charAt(0).toUpperCase()
+              const isAdmin = (u.role || '').toLowerCase() === 'admin'
+
+              return (
+                <div key={u.id} className="p-4 hover:bg-white/40 transition-colors">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`relative h-12 w-12 rounded-full shrink-0 ${isAdmin ? 'admin-crown-wrap' : ''}`}>
+                      <div className={`h-full w-full rounded-full overflow-hidden bg-white flex items-center justify-center ${isAdmin ? 'admin-crown-ring' : 'ring-2 ring-zinc-200/80'}`}>
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt={u.name || u.email || 'Usuario'} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-semibold text-zinc-500">{initials}</span>
+                        )}
+                      </div>
+                      {isAdmin && (
+                        <span className="admin-crown-badge" aria-hidden="true">
+                          <Crown size={8} strokeWidth={2.2} />
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {editingUser === u.id ? (
+                        <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-2 py-1 border border-zinc-300 rounded text-sm mb-1" />
+                      ) : (
+                        <p className="text-sm font-semibold text-zinc-800 truncate">{u.name || 'Sin nombre'}</p>
+                      )}
+                      <p className="text-xs text-zinc-500 truncate">{u.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${status.text}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                          {status.label}
+                        </span>
+                        {editingUser === u.id ? (
+                          <select value={editRole} onChange={e => setEditRole(e.target.value)} className="px-2 py-0.5 border border-zinc-300 rounded text-xs">
+                            {allRoles.map(role => (
+                              <option key={role.id} value={role.name}>{role.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${isAdmin ? 'bg-purple-50 text-purple-600' : 'bg-zinc-100 text-zinc-500'}`}>
+                            {u.role}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 justify-end">
+                    {editingUser === u.id ? (
+                      <>
+                        <button onClick={() => saveUser(u.id)} disabled={saving} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium">
+                          Guardar
+                        </button>
+                        <button onClick={() => setEditingUser(null)} className="px-3 py-1.5 bg-zinc-200 text-zinc-700 rounded-lg text-xs font-medium">
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => openPrivateChat(u.id)}
+                          disabled={openingDmUserId === u.id || u.id === currentUserId}
+                          className="p-2 hover:bg-blue-50 rounded-lg text-zinc-400 hover:text-blue-600 disabled:opacity-40"
+                          title="Chat privado"
+                        >
+                          {openingDmUserId === u.id ? <Loader2 size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+                        </button>
+                        <button
+                          onClick={() => { void openUserChatsViewer(u) }}
+                          className="p-2 hover:bg-indigo-50 rounded-lg text-zinc-400 hover:text-indigo-600"
+                          title="Ver chats"
+                        >
+                          <MessageSquare size={16} />
+                        </button>
+                        <button onClick={() => startEditUser(u)} className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400" title="Editar">
+                          <Edit3 size={16} />
+                        </button>
+                        {confirmDelete === u.id ? (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => deleteUser(u.id)} disabled={saving} className="px-2 py-1 bg-red-500 text-white rounded text-xs">
+                              Confirmar
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)} className="px-2 py-1 bg-zinc-200 rounded text-xs">
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(u.id)} className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-500" title="Eliminar">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     )
   }
 
+  function renderRolesTab() {
+    return <RolesManagement />
+  }
+
   function renderModelsTab() {
     return (
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-zinc-800">Modelos ({models.length})</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Modelos IA ({models.length})
+          </h2>
           <div className="flex gap-2">
             <button onClick={syncModels} disabled={syncing}
-              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-500 disabled:opacity-50 transition-colors">
+              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs md:text-sm rounded-lg hover:shadow-lg hover:scale-105 disabled:opacity-50 transition-all duration-200 font-medium shadow-md">
               {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Sincronizar modelos
+              <span className="hidden sm:inline">Sincronizar</span>
             </button>
             <button onClick={() => openModelForm()}
-              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-500 transition-colors">
-              <Plus size={14} /> Anadir modelo
+              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs md:text-sm rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium shadow-md">
+              <Plus size={14} /> <span className="hidden sm:inline">Añadir modelo</span><span className="sm:hidden">Nuevo</span>
             </button>
           </div>
         </div>
 
-        {/* Model edit form */}
+        {/* Model edit form - Responsive */}
         {showModelForm && (
-          <div className="bg-white border border-blue-200 rounded-xl p-4 mb-4 space-y-3">
-            <p className="text-sm font-medium text-zinc-800">{editingModel ? 'Editar modelo' : 'Nuevo modelo'}</p>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white border border-blue-200 rounded-xl p-4 md:p-6 mb-4 space-y-4 shadow-lg">
+            <p className="text-sm md:text-base font-semibold text-zinc-800">{editingModel ? 'Editar modelo' : 'Nuevo modelo'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Proveedor</label>
                 <select value={modelForm.provider_id} onChange={e => setModelForm({ ...modelForm, provider_id: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm bg-white">
@@ -1559,6 +2112,58 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                 {!modelForm.use_max_tokens && (
                   <span className="text-xs text-zinc-400">Sin limite de tokens (recomendado)</span>
                 )}
+              </div>
+
+              {/* Roles selector */}
+              <div className="col-span-2">
+                <label className="text-xs text-zinc-500 mb-1 block">👥 Roles con acceso a este modelo</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowRolesDropdown(!showRolesDropdown)}
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-left flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors"
+                  >
+                    <span className="text-zinc-700">
+                      {selectedRoles.length === 0
+                        ? 'Seleccionar roles...'
+                        : `${selectedRoles.length} rol(es) seleccionado(s)`}
+                    </span>
+                    <ChevronRight size={16} className={`text-zinc-400 transition-transform ${showRolesDropdown ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {showRolesDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {availableRoles.map(role => (
+                        <label
+                          key={role.id}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 cursor-pointer transition-colors border-b border-zinc-100 last:border-b-0"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedRoles.includes(role.id)}
+                            onChange={() => {
+                              setSelectedRoles(prev =>
+                                prev.includes(role.id)
+                                  ? prev.filter(id => id !== role.id)
+                                  : [...prev, role.id]
+                              )
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-zinc-700">{role.name}</span>
+                        </label>
+                      ))}
+                      {availableRoles.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-zinc-400 text-center">
+                          No hay roles disponibles
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  💡 Si no seleccionas ningún rol, todos los usuarios podrán ver este modelo
+                </p>
               </div>
             </div>
             <div className="flex gap-2 pt-1">
@@ -1760,6 +2365,50 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                 <label className="text-xs text-zinc-500 mb-1 block">Descripcion</label>
                 <input value={connForm.description} onChange={e => setConnForm({ ...connForm, description: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="Servidor de produccion..." />
               </div>
+
+              {/* Roles selector */}
+              <div className="col-span-2">
+                <label className="text-xs text-zinc-500 mb-1 block">👥 Roles con acceso a esta conexión</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowConnRolesDropdown(!showConnRolesDropdown)}
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-left flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors"
+                  >
+                    <span className="text-zinc-700">
+                      {selectedConnRoles.length === 0
+                        ? 'Seleccionar roles...'
+                        : `${selectedConnRoles.length} rol(es) seleccionado(s)`}
+                    </span>
+                    <ChevronRight size={16} className={`text-zinc-400 transition-transform ${showConnRolesDropdown ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {showConnRolesDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {availableRoles.map(role => (
+                        <label key={role.id} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 cursor-pointer transition-colors border-b border-zinc-100 last:border-b-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedConnRoles.includes(role.id)}
+                            onChange={() => {
+                              setSelectedConnRoles(prev =>
+                                prev.includes(role.id)
+                                  ? prev.filter(id => id !== role.id)
+                                  : [...prev, role.id]
+                              )
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-zinc-700">{role.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  💡 Si no seleccionas ningún rol, todos los usuarios podrán ver esta conexión
+                </p>
+              </div>
             </div>
             <div className="flex gap-2 pt-1">
               <button onClick={saveConnection} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-500 disabled:opacity-50">
@@ -1866,10 +2515,111 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
                 <label className="text-xs text-zinc-500 mb-1 block">Nombre</label>
                 <input value={driveForm.name} onChange={e => setDriveForm({ ...driveForm, name: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="Web + Marketing" />
               </div>
+
+              {/* Connection Type Selector */}
               <div>
-                <label className="text-xs text-zinc-500 mb-1 block">Ruta UNC</label>
-                <input value={driveForm.unc_path} onChange={e => setDriveForm({ ...driveForm, unc_path: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="\\gesem-dc\Datos\60-Web + Marketing" />
+                <label className="text-xs text-zinc-500 mb-1 block">Tipo de Conexión</label>
+                <select
+                  value={driveForm.connection_type}
+                  onChange={e => setDriveForm({ ...driveForm, connection_type: e.target.value as 'smb' | 'sftp' })}
+                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm"
+                >
+                  <option value="smb">SMB (Red Local)</option>
+                  <option value="sftp">SFTP (Remoto)</option>
+                </select>
               </div>
+
+              {/* SMB Path */}
+              {driveForm.connection_type === 'smb' && (
+                <div className="col-span-2">
+                  <label className="text-xs text-zinc-500 mb-1 block">Ruta UNC</label>
+                  <input value={driveForm.unc_path} onChange={e => setDriveForm({ ...driveForm, unc_path: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="\\gesem-dc\Datos\60-Web + Marketing" />
+                </div>
+              )}
+
+              {/* SFTP Configuration */}
+              {driveForm.connection_type === 'sftp' && (
+                <>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Host SFTP</label>
+                    <input value={driveForm.sftp_host} onChange={e => setDriveForm({ ...driveForm, sftp_host: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="192.168.1.100 o nas.ejemplo.com" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Puerto SFTP</label>
+                    <input type="number" value={driveForm.sftp_port} onChange={e => setDriveForm({ ...driveForm, sftp_port: parseInt(e.target.value) || 22 })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="22" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Usuario SFTP</label>
+                    <input value={driveForm.sftp_username} onChange={e => setDriveForm({ ...driveForm, sftp_username: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="usuario" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Contraseña SFTP</label>
+                    <input type="password" value={driveForm.sftp_password} onChange={e => setDriveForm({ ...driveForm, sftp_password: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="••••••••" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-zinc-500 mb-1 block">Ruta Remota</label>
+                    <input value={driveForm.unc_path} onChange={e => setDriveForm({ ...driveForm, unc_path: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="/carpeta/documentos" />
+                  </div>
+
+                  {/* Test SFTP Connection Button */}
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={testSFTPConnection}
+                      disabled={testingSFTP || !driveForm.sftp_host || !driveForm.sftp_username || !driveForm.sftp_password}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {testingSFTP ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                      {testingSFTP ? 'Probando conexión...' : 'Probar Conexión SFTP'}
+                    </button>
+                  </div>
+
+                  {/* SFTP Test Result */}
+                  {sftpTestResult && (
+                    <div className={`col-span-2 p-3 rounded-lg border ${sftpTestResult.success ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                      <p className={`text-sm font-medium mb-1 ${sftpTestResult.success ? 'text-emerald-700' : 'text-red-700'}`}>
+                        {sftpTestResult.message}
+                      </p>
+                      {sftpTestResult.details && (
+                        <div className="text-xs text-zinc-600 mt-2">
+                          {sftpTestResult.success ? (
+                            <div>
+                              <p>✅ Host: {sftpTestResult.details.host}:{sftpTestResult.details.port}</p>
+                              <p>✅ Usuario: {sftpTestResult.details.username}</p>
+                              <p>✅ Archivos encontrados: {sftpTestResult.details.items_found}</p>
+                              {sftpTestResult.details.sample_items && sftpTestResult.details.sample_items.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="font-medium">Primeros archivos:</p>
+                                  <ul className="list-disc list-inside ml-2">
+                                    {sftpTestResult.details.sample_items.map((item: any, i: number) => (
+                                      <li key={i}>{item.name} ({item.type})</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="font-medium text-red-700 mb-1">❌ {sftpTestResult.details.error_message}</p>
+                              {sftpTestResult.details.troubleshooting && (
+                                <div className="mt-2">
+                                  <p className="font-medium">Soluciones:</p>
+                                  <ul className="list-disc list-inside ml-2 space-y-1">
+                                    {sftpTestResult.details.troubleshooting.map((tip: string, i: number) => (
+                                      <li key={i}>{tip}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
               <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Extensiones (separadas por coma)</label>
                 <input value={driveForm.file_extensions} onChange={e => setDriveForm({ ...driveForm, file_extensions: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="pdf,docx,xlsx,txt" />
@@ -1881,6 +2631,50 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               <div className="col-span-2">
                 <label className="text-xs text-zinc-500 mb-1 block">Descripcion</label>
                 <input value={driveForm.description} onChange={e => setDriveForm({ ...driveForm, description: e.target.value })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm" placeholder="Carpeta de marketing y documentacion web..." />
+              </div>
+
+              {/* Roles selector */}
+              <div className="col-span-2">
+                <label className="text-xs text-zinc-500 mb-1 block">👥 Roles con acceso a esta unidad</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowDriveRolesDropdown(!showDriveRolesDropdown)}
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-left flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors"
+                  >
+                    <span className="text-zinc-700">
+                      {selectedDriveRoles.length === 0
+                        ? 'Seleccionar roles...'
+                        : `${selectedDriveRoles.length} rol(es) seleccionado(s)`}
+                    </span>
+                    <ChevronRight size={16} className={`text-zinc-400 transition-transform ${showDriveRolesDropdown ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {showDriveRolesDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {availableRoles.map(role => (
+                        <label key={role.id} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 cursor-pointer transition-colors border-b border-zinc-100 last:border-b-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedDriveRoles.includes(role.id)}
+                            onChange={() => {
+                              setSelectedDriveRoles(prev =>
+                                prev.includes(role.id)
+                                  ? prev.filter(id => id !== role.id)
+                                  : [...prev, role.id]
+                              )
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-zinc-700">{role.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  💡 Si no seleccionas ningún rol, todos los usuarios podrán ver esta unidad
+                </p>
               </div>
             </div>
             <div className="flex gap-2 pt-1">
@@ -3027,6 +3821,51 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               />
             </div>
           )}
+
+          {/* Roles selector */}
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">👥 Roles con acceso a este agente</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowAgentRolesDropdown(!showAgentRolesDropdown)}
+                className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-left flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors"
+              >
+                <span className="text-zinc-700">
+                  {selectedAgentRoles.length === 0
+                    ? 'Seleccionar roles...'
+                    : `${selectedAgentRoles.length} rol(es) seleccionado(s)`}
+                </span>
+                <ChevronRight size={16} className={`text-zinc-400 transition-transform ${showAgentRolesDropdown ? 'rotate-90' : ''}`} />
+              </button>
+
+              {showAgentRolesDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {availableRoles.map(role => (
+                    <label key={role.id} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 cursor-pointer transition-colors border-b border-zinc-100 last:border-b-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedAgentRoles.includes(role.id)}
+                        onChange={() => {
+                          setSelectedAgentRoles(prev =>
+                            prev.includes(role.id)
+                              ? prev.filter(id => id !== role.id)
+                              : [...prev, role.id]
+                          )
+                        }}
+                        className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-zinc-700">{role.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-zinc-500 mt-1">
+              💡 Si no seleccionas ningún rol, todos los usuarios podrán ver este agente
+            </p>
+          </div>
+
           <div className="flex gap-2 pt-2">
             <button
               onClick={saveAgent}
@@ -3510,4 +4349,173 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       </div>
     )
   }
+
+  return (
+    <>
+      {renderMainContent()}
+
+      {/* Create User Modal */}
+      {showCreateUserModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-zinc-800 mb-4">Crear Nuevo Usuario</h3>
+
+            {!createdUserCredentials ? (
+              <>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={createUserForm.email}
+                      onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm"
+                      placeholder="usuario@ejemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre *</label>
+                    <input
+                      type="text"
+                      value={createUserForm.name}
+                      onChange={(e) => setCreateUserForm({ ...createUserForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm"
+                      placeholder="Nombre completo"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Rol *</label>
+                    <select
+                      value={createUserForm.role}
+                      onChange={(e) => setCreateUserForm({ ...createUserForm, role: e.target.value })}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm"
+                    >
+                      {allRoles.map(role => (
+                        <option key={role.id} value={role.name}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Contraseña</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={createUserForm.password}
+                        onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
+                        className="w-full px-3 py-2 pr-10 border border-zinc-300 rounded-lg text-sm"
+                        placeholder="Dejar vacío para generar automáticamente"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-700 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Si no se especifica, se generará una contraseña temporal automáticamente
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-6">
+                  <button
+                    onClick={createNewUser}
+                    disabled={creatingUser || !createUserForm.email || !createUserForm.name}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {creatingUser && <Loader2 size={16} className="animate-spin" />}
+                    Crear Usuario
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCreateUserModal(false)
+                      setCreateUserForm({ email: '', name: '', role: 'user', password: '' })
+                    }}
+                    className="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-lg hover:bg-zinc-200 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-green-800 font-medium mb-2">✅ Usuario creado correctamente</p>
+                  {createdUserCredentials.emailSent ? (
+                    <p className="text-xs text-green-700">📧 Se ha enviado un email al usuario con sus credenciales de acceso.</p>
+                  ) : (
+                    <p className="text-xs text-green-700">⚠️ No se pudo enviar el email automáticamente. Envía estas credenciales al usuario de forma segura:</p>
+                  )}
+                </div>
+                <div className="space-y-3 bg-zinc-50 rounded-lg p-4">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">Email</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={createdUserCredentials.email}
+                        readOnly
+                        className="flex-1 px-3 py-2 bg-white border border-zinc-300 rounded-lg text-sm"
+                      />
+                      <button
+                        onClick={() => navigator.clipboard.writeText(createdUserCredentials.email)}
+                        className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"
+                      >
+                        <Check size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">Contraseña Temporal</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={createdUserCredentials.temporaryPassword}
+                        readOnly
+                        className="flex-1 px-3 py-2 bg-white border border-zinc-300 rounded-lg text-sm font-mono"
+                      />
+                      <button
+                        onClick={() => navigator.clipboard.writeText(createdUserCredentials.temporaryPassword)}
+                        className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"
+                      >
+                        <Check size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">Enlace para Cambiar Contraseña</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={createdUserCredentials.resetLink}
+                        readOnly
+                        className="flex-1 px-3 py-2 bg-white border border-zinc-300 rounded-lg text-sm text-xs"
+                      />
+                      <button
+                        onClick={() => navigator.clipboard.writeText(createdUserCredentials.resetLink)}
+                        className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"
+                      >
+                        <Check size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCreateUserModal(false)
+                    setCreatedUserCredentials(null)
+                    setCreateUserForm({ email: '', name: '', role: 'user', password: '' })
+                  }}
+                  className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
 }

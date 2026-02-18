@@ -3,6 +3,8 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
+import Client from 'ssh2-sftp-client'
+import type { FileInfo } from 'ssh2-sftp-client'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -11,6 +13,30 @@ export const maxDuration = 300
 const CHUNK_SIZE = 1600
 const CHUNK_OVERLAP = 250
 const PARALLEL_BATCH_SIZE = 1  // Mejora 7: archivos en paralelo
+
+// ── SFTP Connection ──
+async function connectSFTP(host: string, port: number, username: string, password: string): Promise<Client> {
+  const sftp = new Client()
+  try {
+    console.log(`[SFTP] 🔄 Attempting connection to ${host}:${port} as ${username}...`)
+    await sftp.connect({
+      host,
+      port,
+      username,
+      password,
+      readyTimeout: 30000, // 30 seconds (increased from 10s)
+      retries: 3,
+      retry_factor: 2,
+      retry_minTimeout: 2000,
+    })
+    console.log(`[SFTP] ✅ Connected to ${host}:${port}`)
+    return sftp
+  } catch (error) {
+    console.error(`[SFTP] ❌ Connection failed:`, error)
+    const errorMsg = error instanceof Error ? error.message : 'Error desconocido'
+    throw new Error(`No se pudo conectar al servidor SFTP ${host}:${port}. ${errorMsg}. Verifica que el servidor sea accesible desde internet y que las credenciales sean correctas.`)
+  }
+}
 
 // ── Limpieza de texto ──
 function cleanText(text: string): string {
@@ -394,6 +420,60 @@ function scanDirectory(dirPath: string, extensions: string[], maxSizeMB: number)
   return results
 }
 
+// Recursively scan SFTP directory for files
+async function scanDirectorySFTP(
+  sftp: Client,
+  remotePath: string,
+  extensions: string[],
+  maxSizeMB: number
+): Promise<{ filePath: string; size: number; mtime: Date }[]> {
+  const results: { filePath: string; size: number; mtime: Date }[] = []
+
+  try {
+    const list = await sftp.list(remotePath)
+
+    for (const item of list) {
+      // Skip hidden files and special directories
+      if (item.name.startsWith('.')) continue
+
+      const fullPath = `${remotePath}/${item.name}`.replace(/\/+/g, '/')
+
+      try {
+        if (item.type === 'd') {
+          // Es directorio, escanear recursivamente
+          if (IGNORED_DIRS.includes(item.name)) continue
+          const subResults = await scanDirectorySFTP(sftp, fullPath, extensions, maxSizeMB)
+          results.push(...subResults)
+        } else if (item.type === '-') {
+          // Es archivo
+          // Filtrar archivos temporales
+          if (IGNORED_PREFIXES.some(p => item.name.startsWith(p))) continue
+
+          const ext = item.name.split('.').pop()?.toLowerCase() || ''
+          if (extensions.includes(ext)) {
+            const sizeMB = item.size / (1024 * 1024)
+            if (sizeMB <= maxSizeMB) {
+              results.push({
+                filePath: fullPath,
+                size: item.size,
+                mtime: new Date(item.modifyTime),
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`[SFTP] ⚠️ Error accessing ${fullPath}:`, error)
+        // skip inaccessible files
+      }
+    }
+  } catch (error) {
+    console.warn(`[SFTP] ⚠️ Error listing directory ${remotePath}:`, error)
+    // skip inaccessible directories
+  }
+
+  return results
+}
+
 export async function POST(req: NextRequest) {
   const user = await verifyAdmin()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -410,19 +490,35 @@ export async function POST(req: NextRequest) {
   // Update status to syncing
   await service.from('network_drives').update({ sync_status: 'syncing', sync_error: null, updated_at: new Date().toISOString() }).eq('id', drive_id)
 
+  const extensions = drive.file_extensions || ['pdf', 'docx', 'xlsx', 'txt', 'csv', 'md']
+  const maxSize = drive.max_file_size_mb || 50
+  const connectionType = drive.connection_type || 'smb'
+
+  let sftp: Client | null = null
+  let files: { filePath: string; size?: number; stat?: fs.Stats; mtime?: Date }[] = []
+
   try {
-    // Resolve UNC path - convert UNC to Windows path format
-    const scanPath = drive.unc_path
-    // Support both \\server\share and mapped drive letters (Z:\)
-    if (!fs.existsSync(scanPath)) {
-      return NextResponse.json({ error: `No se puede acceder a la ruta: ${scanPath}. Asegúrate de estar conectado a la VPN/red.` }, { status: 400 })
+    if (connectionType === 'sftp') {
+      // ── SFTP Mode ──
+      if (!drive.sftp_host || !drive.sftp_username || !drive.sftp_password) {
+        return NextResponse.json({ error: 'Configuración SFTP incompleta. Verifica host, usuario y contraseña.' }, { status: 400 })
+      }
+
+      console.log(`[SFTP] Connecting to ${drive.sftp_host}:${drive.sftp_port || 22}...`)
+      sftp = await connectSFTP(drive.sftp_host, drive.sftp_port || 22, drive.sftp_username, drive.sftp_password)
+
+      const remotePath = drive.unc_path || '/'
+      console.log(`[SFTP] Scanning directory: ${remotePath}`)
+      files = await scanDirectorySFTP(sftp, remotePath, extensions, maxSize)
+      console.log(`[SFTP] Found ${files.length} files`)
+    } else {
+      // ── SMB Mode (local filesystem) ──
+      const scanPath = drive.unc_path
+      if (!fs.existsSync(scanPath)) {
+        return NextResponse.json({ error: `No se puede acceder a la ruta: ${scanPath}. Asegúrate de estar conectado a la VPN/red.` }, { status: 400 })
+      }
+      files = scanDirectory(scanPath, extensions, maxSize)
     }
-
-    const extensions = drive.file_extensions || ['pdf', 'docx', 'xlsx', 'txt', 'csv', 'md']
-    const maxSize = drive.max_file_size_mb || 50
-
-    // Scan files
-    const files = scanDirectory(scanPath, extensions, maxSize)
 
     // Get existing indexed files
     const { data: existingFiles } = await service.from('network_files')
@@ -449,17 +545,31 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Mejora 7: Procesar archivos en paralelo (batches de PARALLEL_BATCH_SIZE) ──
-    async function processFile(filePath: string, stat: fs.Stats): Promise<'new' | 'updated' | 'skipped' | 'error'> {
+    async function processFile(
+      filePath: string,
+      fileInfo: { stat?: fs.Stats; size?: number; mtime?: Date }
+    ): Promise<'new' | 'updated' | 'skipped' | 'error'> {
       const filename = path.basename(filePath)
       const ext = path.extname(filename).slice(1).toLowerCase()
-      const lastMod = stat.mtime.toISOString()
+
+      // Get file size and mtime from either stat or SFTP info
+      const fileSize = fileInfo.stat?.size ?? fileInfo.size ?? 0
+      const mtime = fileInfo.stat?.mtime ?? fileInfo.mtime ?? new Date()
+      const lastMod = mtime.toISOString()
+
       const existing = existingMap.get(filePath)
 
       // Skip if already indexed and not modified
       if (existing && existing.last_modified === lastMod) return 'skipped'
 
       try {
-        const buffer = fs.readFileSync(filePath)
+        // Read file from SMB or SFTP
+        let buffer: Buffer
+        if (connectionType === 'sftp' && sftp) {
+          buffer = await sftp.get(filePath) as Buffer
+        } else {
+          buffer = fs.readFileSync(filePath)
+        }
         const filename = path.basename(filePath)
         const rawText = await extractText(buffer, ext, filename)
         const text = cleanText(rawText)
@@ -474,7 +584,7 @@ export async function POST(req: NextRequest) {
           } else {
             await service.from('network_files').insert({
               drive_id, file_path: filePath, filename, extension: ext,
-              file_size: stat.size, last_modified: lastMod,
+              file_size: fileSize, last_modified: lastMod,
               status: 'skipped', error_message: 'Sin texto extraíble',
             })
           }
@@ -487,7 +597,7 @@ export async function POST(req: NextRequest) {
         // ── Mejora 9: Más metadata en chunks ──
         const folder = path.dirname(filePath).split(path.sep).slice(-2).join('/')
         // ✅ M4: Await semantic chunking
-        const chunks = await chunkText(text, { filename, folder, ext, file_size: stat.size })
+        const chunks = await chunkText(text, { filename, folder, ext, file_size: fileSize })
         if (chunks.length === 0) return 'skipped'
 
         // ✅ M5: Pass service for embedding cache
@@ -518,7 +628,7 @@ export async function POST(req: NextRequest) {
           await service.from('network_file_chunks').delete().eq('network_file_id', existing.id)
           // ✅ M3: Include LLM analysis fields
           await service.from('network_files').update({
-            filename, extension: ext, file_size: stat.size, last_modified: lastMod,
+            filename, extension: ext, file_size: fileSize, last_modified: lastMod,
             content_hash: hash,
             chunk_count: chunks.length, char_count: text.length, status: 'done',
             error_message: null, updated_at: new Date().toISOString(),
@@ -536,7 +646,7 @@ export async function POST(req: NextRequest) {
           // ✅ M3: Include LLM analysis fields
           const { data: newFile } = await service.from('network_files').insert({
             drive_id, file_path: filePath, filename, extension: ext,
-            file_size: stat.size, last_modified: lastMod, content_hash: hash,
+            file_size: fileSize, last_modified: lastMod, content_hash: hash,
             chunk_count: chunks.length, char_count: text.length, status: 'done',
             // M3: LLM analysis metadata
             doc_type: analysis?.doc_type || null,
@@ -554,7 +664,7 @@ export async function POST(req: NextRequest) {
         const chunkRows = chunks.map((content, i) => ({
           network_file_id: fileId, drive_id, chunk_index: i,
           content, embedding: JSON.stringify(embeddings[i]),
-          meta_json: { filename, ext, folder, file_size: stat.size, total_chunks: chunks.length },
+          meta_json: { filename, ext, folder, file_size: fileSize, total_chunks: chunks.length },
         }))
         for (let i = 0; i < chunkRows.length; i += 50) {
           await service.from('network_file_chunks').insert(chunkRows.slice(i, i + 50))
@@ -569,7 +679,7 @@ export async function POST(req: NextRequest) {
           try {
             await service.from('network_files').insert({
               drive_id, file_path: filePath, filename, extension: ext,
-              file_size: stat.size, last_modified: lastMod,
+              file_size: fileSize, last_modified: lastMod,
               status: 'failed', error_message: msg,
             })
           } catch { /* ignore */ }
@@ -581,7 +691,7 @@ export async function POST(req: NextRequest) {
     // Process files in parallel batches
     for (let i = 0; i < files.length; i += PARALLEL_BATCH_SIZE) {
       const batch = files.slice(i, i + PARALLEL_BATCH_SIZE)
-      const results = await Promise.allSettled(batch.map(f => processFile(f.filePath, f.stat)))
+      const results = await Promise.allSettled(batch.map(f => processFile(f.filePath, { stat: f.stat, size: f.size, mtime: f.mtime })))
       for (const r of results) {
         const status = r.status === 'fulfilled' ? r.value : 'error'
         if (status === 'new') newFiles++
@@ -602,6 +712,12 @@ export async function POST(req: NextRequest) {
       last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', drive_id)
 
+    // Close SFTP connection if used
+    if (sftp) {
+      await sftp.end()
+      console.log('[SFTP] ✅ Connection closed')
+    }
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -617,6 +733,13 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (err) {
+    // Close SFTP connection on error
+    if (sftp) {
+      try {
+        await sftp.end()
+      } catch { /* ignore */ }
+    }
+
     const msg = err instanceof Error ? err.message : 'Error desconocido'
     await service.from('network_drives').update({
       sync_status: 'error', sync_error: msg, updated_at: new Date().toISOString(),
