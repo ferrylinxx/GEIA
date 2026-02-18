@@ -244,8 +244,13 @@ export default function ChatInput() {
         setInput(text)
         textareaRef.current?.focus()
         // Auto-resize textarea
-        if (typeof window !== 'undefined') {
-          window.requestAnimationFrame(() => autoResize())
+        if (typeof window !== 'undefined' && textareaRef.current) {
+          window.requestAnimationFrame(() => {
+            const ta = textareaRef.current
+            if (!ta) return
+            ta.style.height = 'auto'
+            ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'
+          })
         }
       }
     }
@@ -254,7 +259,7 @@ export default function ChatInput() {
     return () => {
       window.removeEventListener('apply-suggestion' as any, handleApplySuggestionEvent)
     }
-  }, [autoResize])
+  }, [])
 
   const handleApplySuggestion = useCallback((text: string, toolActivations?: {
     webSearch?: boolean
