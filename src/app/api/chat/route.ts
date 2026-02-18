@@ -4055,6 +4055,9 @@ REGLAS OBLIGATORIAS:
   // Stream response
   const encoder = new TextEncoder()
   let fullContent = ''
+  let totalPromptTokens = 0
+  let totalCompletionTokens = 0
+  let totalTokens = 0
 
   // Helper function to send research events via SSE
   const sendResearchEvent = (type: string, message: string, data?: unknown, controller?: ReadableStreamDefaultController) => {
@@ -4116,6 +4119,12 @@ REGLAS OBLIGATORIAS:
                     requestAborted = true
                     break
                   }
+                }
+                // Capture usage data if present
+                if (parsed.usage) {
+                  totalPromptTokens = parsed.usage.prompt_tokens || 0
+                  totalCompletionTokens = parsed.usage.completion_tokens || 0
+                  totalTokens = parsed.usage.total_tokens || 0
                 }
               } catch { /* ignore parse errors */ }
             }
@@ -4315,6 +4324,7 @@ REGLAS OBLIGATORIAS:
           ...(Object.keys(metaJson).length > 0 ? { meta_json: metaJson } : {}),
         }
 
+        let assistantMessageId: string | null = null
         if (regenerate_message_id) {
           // Create version for regeneration
           const { data: existingVersions } = await serviceClient.from('message_versions')
@@ -4331,6 +4341,7 @@ REGLAS OBLIGATORIAS:
             ...(assistantGeneratedAttachments.length > 0 ? { attachments_json: assistantGeneratedAttachments } : {}),
             ...(Object.keys(metaJson).length > 0 ? { meta_json: metaJson } : {}),
           }).eq('id', regenerate_message_id)
+          assistantMessageId = regenerate_message_id
         } else {
           const { data: newMsg } = await serviceClient.from('messages').insert(msgData).select().single()
           if (newMsg) {
@@ -4338,6 +4349,41 @@ REGLAS OBLIGATORIAS:
             await serviceClient.from('message_versions').insert({
               message_id: newMsg.id, version_index: 1, content: fullContent, model, sources_json: allSources,
             })
+            assistantMessageId = newMsg.id
+          }
+        }
+
+        // Record token usage
+        if (assistantMessageId && totalTokens > 0) {
+          // Model pricing (USD per 1K tokens)
+          const modelPricing: Record<string, { prompt: number; completion: number }> = {
+            'gpt-4o': { prompt: 0.0025, completion: 0.01 },
+            'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
+            'gpt-4-turbo': { prompt: 0.01, completion: 0.03 },
+            'gpt-4': { prompt: 0.03, completion: 0.06 },
+            'gpt-3.5-turbo': { prompt: 0.0005, completion: 0.0015 },
+            'claude-3-5-sonnet-20241022': { prompt: 0.003, completion: 0.015 },
+            'claude-3-5-haiku-20241022': { prompt: 0.001, completion: 0.005 },
+            'claude-3-opus-20240229': { prompt: 0.015, completion: 0.075 },
+          }
+
+          const pricing = modelPricing[model] || { prompt: 0, completion: 0 }
+          const costUsd = (totalPromptTokens / 1000 * pricing.prompt) + (totalCompletionTokens / 1000 * pricing.completion)
+
+          try {
+            await serviceClient.from('token_usage').insert({
+              user_id: user.id,
+              conversation_id,
+              message_id: assistantMessageId,
+              model,
+              prompt_tokens: totalPromptTokens,
+              completion_tokens: totalCompletionTokens,
+              total_tokens: totalTokens,
+              cost_usd: costUsd,
+            })
+            console.log(`[TokenUsage] Recorded: ${totalTokens} tokens, $${costUsd.toFixed(6)} for model ${model}`)
+          } catch (tokenErr) {
+            console.error('[TokenUsage] Failed to record:', tokenErr)
           }
         }
 

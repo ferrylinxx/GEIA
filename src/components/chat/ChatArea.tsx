@@ -5,6 +5,7 @@ import { useChatStore } from '@/store/chat-store'
 import { useUIStore, type ToolStatus } from '@/store/ui-store'
 import MessageBubble from '@/components/chat/MessageBubble'
 import ChatInput from '@/components/chat/ChatInput'
+import FollowUpSuggestions from '@/components/chat/FollowUpSuggestions'
 import DeepResearchProgress from '@/components/chat/DeepResearchProgress'
 import DeepResearchFloatingWindow from '@/components/chat/DeepResearchFloatingWindow'
 import { Loader2, Globe, Database, HardDrive, ArrowDown, ImagePlus, FlaskConical, FileText, BarChart3 } from 'lucide-react'
@@ -41,6 +42,12 @@ export default function ChatArea() {
   const [chatTransition, setChatTransition] = useState(false)
   const [showResearchWindow, setShowResearchWindow] = useState(false)
   const prevConvIdRef = useRef<string | null>(null)
+
+  // Handler for follow-up suggestions
+  const handleSuggestionSelect = useCallback((text: string) => {
+    // Dispatch custom event to ChatInput
+    window.dispatchEvent(new CustomEvent('apply-suggestion', { detail: { text } }))
+  }, [])
 
   const genericThinkingPhrases = useMemo<readonly string[]>(() => {
     const list = t.toolStatusPhrases.thinking
@@ -248,6 +255,9 @@ export default function ChatArea() {
           <ArrowDown size={18} className="text-zinc-600" />
         </button>
       )}
+
+      {/* Follow-up suggestions */}
+      <FollowUpSuggestions onSelectSuggestion={handleSuggestionSelect} />
 
       <ChatInput />
 

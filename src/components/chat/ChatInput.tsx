@@ -236,6 +236,26 @@ export default function ChatInput() {
     lastStreamedResponseRef.current = ''
   }, [isStreaming, streamingContent, ttsEnabled, language])
 
+  // Listen for suggestion selection events
+  useEffect(() => {
+    const handleApplySuggestionEvent = (event: CustomEvent) => {
+      const { text } = event.detail
+      if (text) {
+        setInput(text)
+        textareaRef.current?.focus()
+        // Auto-resize textarea
+        if (typeof window !== 'undefined') {
+          window.requestAnimationFrame(() => autoResize())
+        }
+      }
+    }
+
+    window.addEventListener('apply-suggestion' as any, handleApplySuggestionEvent)
+    return () => {
+      window.removeEventListener('apply-suggestion' as any, handleApplySuggestionEvent)
+    }
+  }, [autoResize])
+
   const handleApplySuggestion = useCallback((text: string, toolActivations?: {
     webSearch?: boolean
     dbQuery?: boolean

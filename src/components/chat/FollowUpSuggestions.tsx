@@ -1,0 +1,119 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Sparkles, Loader2 } from 'lucide-react'
+import { useChatStore } from '@/store/chat-store'
+
+interface FollowUpSuggestionsProps {
+  onSelectSuggestion: (text: string) => void
+}
+
+export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSuggestionsProps) {
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const { isStreaming, streamingContent, messages, activeConversationId } = useChatStore()
+
+  useEffect(() => {
+    // When streaming just finished, generate suggestions
+    const generateSuggestions = async () => {
+      if (isStreaming || !activeConversationId) {
+        setVisible(false)
+        return
+      }
+
+      // Get last 4 messages for context
+      const recentMessages = messages.slice(-4)
+      if (recentMessages.length < 2) {
+        setVisible(false)
+        return
+      }
+
+      const lastUserMessage = recentMessages.filter(m => m.role === 'user').slice(-1)[0]
+      const lastAssistantMessage = recentMessages.filter(m => m.role === 'assistant').slice(-1)[0]
+
+      if (!lastUserMessage || !lastAssistantMessage) {
+        setVisible(false)
+        return
+      }
+
+      setLoading(true)
+      setVisible(true)
+
+      try {
+        const response = await fetch('/api/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversation_id: activeConversationId,
+            user_message: lastUserMessage.content,
+            assistant_message: lastAssistantMessage.content,
+            context: recentMessages.slice(0, -2).map(m => ({
+              role: m.role,
+              content: m.content.substring(0, 500)
+            }))
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSuggestions(data.suggestions || [])
+        }
+      } catch (error) {
+        console.error('Failed to generate suggestions:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Debounce to avoid generating on every message change
+    const timer = setTimeout(generateSuggestions, 500)
+    return () => clearTimeout(timer)
+  }, [isStreaming, messages, activeConversationId])
+
+  if (!visible || (!loading && suggestions.length === 0)) {
+    return null
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/50 shadow-sm">
+        <div className="flex items-start gap-2">
+          <Sparkles size={16} className="text-indigo-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-indigo-700 mb-2">Continúa la conversación</p>
+            {loading ? (
+              <div className="flex items-center gap-2 text-xs text-indigo-600">
+                <Loader2 size={14} className="animate-spin" />
+                <span>Generando sugerencias...</span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      onSelectSuggestion(suggestion)
+                      setVisible(false)
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-indigo-200 text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm hover:shadow text-left"
+                  >
+                    <span>{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setVisible(false)}
+            className="p-1 rounded-md text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100 transition-colors shrink-0"
+            aria-label="Cerrar sugerencias"
+          >
+            <Sparkles size={14} className="rotate-180" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
