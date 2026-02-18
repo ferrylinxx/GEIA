@@ -95,7 +95,7 @@ export async function GET() {
         if (anyPermissions && anyPermissions.length > 0) {
           // Permissions system is active - only show models this role has access to
           if (permissions && permissions.length > 0) {
-            const allowedModelIds = permissions.map(p => p.resource_id).filter(Boolean)
+            const allowedModelIds = permissions.map((p: { resource_id: string | null }) => p.resource_id).filter(Boolean)
             filteredModels = dbModels.filter((m: Record<string, unknown>) =>
               allowedModelIds.includes(m.id as string)
             )
