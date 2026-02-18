@@ -1,12 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { AIProvider, ModelConfig, DbConnection, NetworkDrive, Banner } from '@/lib/types'
 import ModernAdminLayout from './ModernAdminLayout'
 import ModernDashboard from './ModernDashboard'
+import ModernSectionWrapper from './ModernSectionWrapper'
 import RolesManagement from './RolesManagement'
 import ToolsManagement from './ToolsManagement'
+import {
+  Users, Shield, Wrench, Cpu, Plug, Database, HardDrive, FileText, Megaphone, Sparkles, Zap,
+  Plus, Edit3, Trash2, RefreshCw, Loader2, Eye, EyeOff, ArrowUp, ArrowDown, GripVertical,
+  Check, X, Save, MessageCircle, Crown, Upload, Search, ToggleLeft, ToggleRight
+} from 'lucide-react'
 
 type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents'
 
@@ -22,6 +29,39 @@ interface UserProfile {
   avatar_url: string | null
   role: string
 }
+
+interface UserRow {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  avatar_url: string | null
+  created_at: string
+  activity_status?: 'online' | 'idle' | 'offline'
+  activity_last_seen_at?: string | null
+}
+
+interface AdminFileItem {
+  id: string
+  user_id: string
+  user_name: string | null
+  storage_path: string
+  filename: string
+  mime: string | null
+  size: number
+  ingest_status: 'none' | 'queued' | 'processing' | 'done' | 'failed'
+  created_at: string
+  signed_url?: string | null
+  chunk_count?: number
+}
+
+const PROVIDER_TYPES = [
+  { value: 'openai', label: 'OpenAI', url: 'https://api.openai.com/v1' },
+  { value: 'anthropic', label: 'Anthropic', url: 'https://api.anthropic.com/v1' },
+  { value: 'gemini', label: 'Google Gemini', url: 'https://generativelanguage.googleapis.com/v1beta' },
+  { value: 'ollama', label: 'Ollama', url: 'http://localhost:11434' },
+  { value: 'custom', label: 'Custom', url: '' },
+]
 
 export default function ModernAdminPageClient({ stats, currentUserId }: Props) {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
@@ -67,75 +107,187 @@ export default function ModernAdminPageClient({ stats, currentUserId }: Props) {
       case 'dashboard':
         return <ModernDashboard stats={stats} />
       
-      case 'roles':
-        return (
-          <div className="p-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-green-900 to-emerald-900 dark:from-white dark:via-green-100 dark:to-emerald-100 bg-clip-text text-transparent">
-                  Roles & Permisos
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-2">
-                  Gestiona roles de usuario y permisos de acceso
-                </p>
-              </div>
-              <RolesManagement />
-            </div>
-          </div>
-        )
-      
-      case 'tools':
-        return (
-          <div className="p-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-orange-900 to-amber-900 dark:from-white dark:via-orange-100 dark:to-amber-100 bg-clip-text text-transparent">
-                  Herramientas
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-2">
-                  Configura permisos de herramientas por rol
-                </p>
-              </div>
-              <ToolsManagement />
-            </div>
-          </div>
-        )
-      
       case 'users':
         return (
-          <div className="p-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-purple-900 to-pink-900 dark:from-white dark:via-purple-100 dark:to-pink-100 bg-clip-text text-transparent">
-                  Usuarios
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-2">
-                  Gestiona usuarios de la plataforma
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
-                <p className="text-center text-slate-500 dark:text-slate-400">
-                  Sección de usuarios en desarrollo...
-                </p>
-              </div>
+          <ModernSectionWrapper
+            title="Usuarios"
+            subtitle="Gestiona usuarios de la plataforma"
+            icon={Users}
+            gradient="purple"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de usuarios en desarrollo...
+              </p>
             </div>
-          </div>
+          </ModernSectionWrapper>
         )
-      
+
+      case 'roles':
+        return (
+          <ModernSectionWrapper
+            title="Roles & Permisos"
+            subtitle="Gestiona roles de usuario y permisos de acceso"
+            icon={Shield}
+            gradient="green"
+          >
+            <RolesManagement />
+          </ModernSectionWrapper>
+        )
+
+      case 'tools':
+        return (
+          <ModernSectionWrapper
+            title="Herramientas"
+            subtitle="Configura permisos de herramientas por rol"
+            icon={Wrench}
+            gradient="orange"
+          >
+            <ToolsManagement />
+          </ModernSectionWrapper>
+        )
+
+      case 'models':
+        return (
+          <ModernSectionWrapper
+            title="Modelos IA"
+            subtitle="Configura y gestiona modelos de inteligencia artificial"
+            icon={Cpu}
+            gradient="pink"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de modelos en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'providers':
+        return (
+          <ModernSectionWrapper
+            title="Proveedores IA"
+            subtitle="Gestiona proveedores de servicios de inteligencia artificial"
+            icon={Plug}
+            gradient="indigo"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de proveedores en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'connections':
+        return (
+          <ModernSectionWrapper
+            title="Conexiones de Base de Datos"
+            subtitle="Administra conexiones a bases de datos externas"
+            icon={Database}
+            gradient="cyan"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de conexiones en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'network-drives':
+        return (
+          <ModernSectionWrapper
+            title="Unidades de Red"
+            subtitle="Gestiona unidades de red SFTP y SMB"
+            icon={HardDrive}
+            gradient="teal"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de unidades de red en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'files':
+        return (
+          <ModernSectionWrapper
+            title="Archivos Globales"
+            subtitle="Administra archivos y documentos del sistema"
+            icon={FileText}
+            gradient="yellow"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de archivos en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'banners':
+        return (
+          <ModernSectionWrapper
+            title="Banners"
+            subtitle="Gestiona anuncios y notificaciones del sistema"
+            icon={Megaphone}
+            gradient="red"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de banners en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'document-analysis':
+        return (
+          <ModernSectionWrapper
+            title="Análisis de Documentos"
+            subtitle="Configura el análisis automático de documentos"
+            icon={Sparkles}
+            gradient="purple"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de análisis de documentos en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
+      case 'agents':
+        return (
+          <ModernSectionWrapper
+            title="Agentes IA"
+            subtitle="Administra agentes de inteligencia artificial"
+            icon={Zap}
+            gradient="blue"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6">
+              <p className="text-center text-slate-500 dark:text-slate-400">
+                Sección de agentes en desarrollo...
+              </p>
+            </div>
+          </ModernSectionWrapper>
+        )
+
       default:
         return (
-          <div className="p-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-12 text-center">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                  Sección en Desarrollo
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Esta sección estará disponible próximamente
-                </p>
-              </div>
+          <ModernSectionWrapper
+            title="Sección en Desarrollo"
+            subtitle="Esta sección estará disponible próximamente"
+            gradient="blue"
+          >
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-12 text-center">
+              <p className="text-slate-600 dark:text-slate-400">
+                Contenido próximamente...
+              </p>
             </div>
-          </div>
+          </ModernSectionWrapper>
         )
     }
   }

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
-import ModernAdminPageClient from '@/components/admin/ModernAdminPageClient'
+import AdminPageClient from '@/components/admin/AdminPageClient'
 import UserActivityTracker from '@/components/activity/UserActivityTracker'
 
 export default async function AdminPage() {
@@ -22,7 +22,7 @@ export default async function AdminPage() {
   return (
     <>
       <UserActivityTracker />
-      <ModernAdminPageClient
+      <AdminPageClient
         currentUserId={user.id}
         stats={{ users: userCount || 0, conversations: convCount || 0, messages: msgCount || 0, files: fileCount || 0, chunks: chunkCount || 0 }}
       />
