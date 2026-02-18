@@ -3,8 +3,6 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
-import Client from 'ssh2-sftp-client'
-import type { FileInfo } from 'ssh2-sftp-client'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -14,8 +12,10 @@ const CHUNK_SIZE = 1600
 const CHUNK_OVERLAP = 250
 const PARALLEL_BATCH_SIZE = 1  // Mejora 7: archivos en paralelo
 
-// ── SFTP Connection ──
-async function connectSFTP(host: string, port: number, username: string, password: string): Promise<Client> {
+// ── SFTP Connection (Dynamic Import) ──
+async function connectSFTP(host: string, port: number, username: string, password: string): Promise<any> {
+  // Dynamic import to avoid Turbopack build issues
+  const Client = (await import('ssh2-sftp-client')).default
   const sftp = new Client()
   try {
     console.log(`[SFTP] 🔄 Attempting connection to ${host}:${port} as ${username}...`)
@@ -422,7 +422,7 @@ function scanDirectory(dirPath: string, extensions: string[], maxSizeMB: number)
 
 // Recursively scan SFTP directory for files
 async function scanDirectorySFTP(
-  sftp: Client,
+  sftp: any,
   remotePath: string,
   extensions: string[],
   maxSizeMB: number
@@ -494,7 +494,7 @@ export async function POST(req: NextRequest) {
   const maxSize = drive.max_file_size_mb || 50
   const connectionType = drive.connection_type || 'smb'
 
-  let sftp: Client | null = null
+  let sftp: any | null = null
   let files: { filePath: string; size?: number; stat?: fs.Stats; mtime?: Date }[] = []
 
   try {
