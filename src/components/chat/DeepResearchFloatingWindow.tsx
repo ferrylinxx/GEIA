@@ -37,6 +37,7 @@ export default function DeepResearchFloatingWindow({ isActive, onClose }: DeepRe
   useEffect(() => {
     const handleResearchEvent = (event: CustomEvent) => {
       const { type, message, data, url, progress, screenshot } = event.detail
+      console.log('[DeepResearchFloatingWindow] Event received:', type, message)
       setEvents(prev => [...prev, {
         type,
         message,

@@ -610,6 +610,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
               try {
                 const eventData = JSON.parse(line.slice(6))
                 if (eventData.type === 'research_event') {
+                  console.log('[ChatInput] Research event received:', eventData.data.type, eventData.data.message)
                   // Emit custom event for DeepResearchFloatingWindow
                   window.dispatchEvent(new CustomEvent('research-event', {
                     detail: eventData.data
