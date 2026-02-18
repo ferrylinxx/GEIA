@@ -109,7 +109,7 @@ export async function GET() {
     // Build allowed tools map from meta_json
     const allowedTools = new Set(
       permissions
-        .map(p => (p.meta_json as { tool_id?: string })?.tool_id)
+        .map((p: { meta_json: unknown }) => (p.meta_json as { tool_id?: string })?.tool_id)
         .filter(Boolean)
     )
 
