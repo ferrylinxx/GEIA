@@ -43,29 +43,39 @@ const clearExpiredCaches = () => {
   }
 }
 
-export async function searchWeb(query: string, numResults = 5): Promise<WebSearchResult[]> {
+export type SearchProgressCallback = (type: string, message: string, data?: unknown, url?: string, progress?: number) => void
+
+export async function searchWeb(query: string, numResults = 5, onProgress?: SearchProgressCallback): Promise<WebSearchResult[]> {
   lastSearchAnswer = null
   clearExpiredCaches()
   const cacheKey = `${numResults}:${normalizeQueryKey(query)}`
   const cached = searchCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp <= SEARCH_CACHE_TTL) {
     lastSearchAnswer = cached.answer
+    onProgress?.('search', `🔍 Resultados encontrados en caché: ${cached.results.length} fuentes`, undefined, undefined, 100)
     return cloneResults(cached.results).slice(0, numResults)
   }
+
+  onProgress?.('search', `🔍 Iniciando búsqueda en Google: "${query}"`, undefined, undefined, 10)
 
   let results: WebSearchResult[] = []
   // Try Tavily first if API key is available (best for AI apps)
   if (process.env.TAVILY_API_KEY) {
     try {
+      onProgress?.('web_access', '📡 Conectando con Tavily API...', undefined, undefined, 20)
       results = await searchWithTavily(query, numResults)
+      onProgress?.('search', `✅ Encontrados ${results.length} resultados`, { count: results.length }, undefined, 40)
     } catch (e) {
       console.error('[Tavily] Error, falling back to DuckDuckGo:', e)
+      onProgress?.('search', '⚠️ Tavily falló, usando DuckDuckGo...', undefined, undefined, 30)
     }
   }
 
   // Fallback to DuckDuckGo HTML scraping (no API key needed)
   if (results.length === 0) {
+    onProgress?.('web_access', '🦆 Buscando en DuckDuckGo...', undefined, undefined, 25)
     results = await searchWithDuckDuckGo(query, numResults)
+    onProgress?.('search', `✅ Encontrados ${results.length} resultados`, { count: results.length }, undefined, 40)
   }
 
   searchCache.set(cacheKey, {
@@ -298,16 +308,29 @@ export async function fetchPageContent(url: string, maxChars = 4000): Promise<st
  * Enrich search results by fetching actual page content from the top N URLs.
  * This gives the LLM real data instead of just snippets.
  */
-export async function enrichSearchResults(results: WebSearchResult[], topN = 3): Promise<WebSearchResult[]> {
+export async function enrichSearchResults(results: WebSearchResult[], topN = 3, onProgress?: SearchProgressCallback): Promise<WebSearchResult[]> {
   const toFetch = results.slice(0, topN)
   const rest = results.slice(topN)
 
-  const enriched = await Promise.all(
-    toFetch.map(async (r) => {
-      const pageContent = await fetchPageContent(r.url)
-      return { ...r, pageContent: pageContent || undefined }
-    })
-  )
+  const enriched: WebSearchResult[] = []
+
+  for (let i = 0; i < toFetch.length; i++) {
+    const r = toFetch[i]
+    const progress = 50 + ((i / toFetch.length) * 40)
+
+    onProgress?.('web_access', `🌐 Accediendo a: ${r.title}`, undefined, r.url, progress)
+    onProgress?.('analyzing', `✨ Descargando contenido de la página...`, undefined, undefined, progress + 5)
+
+    const pageContent = await fetchPageContent(r.url)
+
+    if (pageContent) {
+      onProgress?.('extracting', `📄 Extraídos ${pageContent.length} caracteres`, undefined, undefined, progress + 10)
+    } else {
+      onProgress?.('extracting', `⚠️ No se pudo extraer contenido`, undefined, undefined, progress + 10)
+    }
+
+    enriched.push({ ...r, pageContent: pageContent || undefined })
+  }
 
   return [...enriched, ...rest]
 }
