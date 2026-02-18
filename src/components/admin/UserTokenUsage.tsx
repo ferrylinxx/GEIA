@@ -33,6 +33,9 @@ export default function UserTokenUsage({ userId }: UserTokenUsageProps) {
     created_at: string
   }>>([])
 
+  // Tasa de cambio USD a EUR (aproximada, puedes actualizarla)
+  const USD_TO_EUR = 0.92
+
   useEffect(() => {
     const supabase = createClient()
     
@@ -136,8 +139,13 @@ export default function UserTokenUsage({ userId }: UserTokenUsageProps) {
             <DollarSign size={14} />
             <span className="text-xs font-medium">Costo Total</span>
           </div>
-          <div className="text-2xl font-bold text-emerald-900">
-            ${stats.total_cost_usd.toFixed(4)}
+          <div className="flex items-baseline gap-2">
+            <div className="text-2xl font-bold text-emerald-900">
+              €{(stats.total_cost_usd * USD_TO_EUR).toFixed(4)}
+            </div>
+            <div className="text-sm text-emerald-600">
+              (${stats.total_cost_usd.toFixed(4)})
+            </div>
           </div>
           {stats.last_usage_at && (
             <div className="text-[10px] text-emerald-600 mt-0.5">
@@ -162,7 +170,10 @@ export default function UserTokenUsage({ userId }: UserTokenUsageProps) {
                   <span className="text-zinc-400 ml-2">{activity.total_tokens.toLocaleString()} tokens</span>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-emerald-600">${activity.cost_usd.toFixed(4)}</div>
+                  <div className="font-semibold text-emerald-600">
+                    €{(activity.cost_usd * USD_TO_EUR).toFixed(4)}
+                  </div>
+                  <div className="text-[10px] text-zinc-400">${activity.cost_usd.toFixed(4)}</div>
                   <div className="text-[10px] text-zinc-400">
                     {new Date(activity.created_at).toLocaleTimeString('es-ES')}
                   </div>

@@ -26,11 +26,11 @@ export async function POST(req: NextRequest) {
 
     // Build context for the AI
     const contextMessages: Message[] = [
-      { role: 'system', content: 'Eres un asistente que genera sugerencias de seguimiento personales y conversacionales. Genera exactamente 3 preguntas breves (máximo 8 palabras cada una) dirigidas directamente al usuario usando "tú" o formas conversacionales como "¿Quieres que...?", "¿Te gustaría...?", "¿Hacemos...?", "¿Necesitas...?", "¿Te ayudo con...?". Las preguntas deben ser específicas al contexto de la conversación y sentirse naturales y cercanas. Responde SOLO con un array JSON de strings, sin texto adicional.' },
+      { role: 'system', content: 'Eres un asistente que genera sugerencias de seguimiento estilo ChatGPT. Genera exactamente 6 preguntas o acciones breves (máximo 6 palabras cada una) relacionadas con el tema de la conversación. Las sugerencias deben ser genéricas, directas y útiles, sin usar "tú" ni formas personales. Ejemplos: "Explicar con más detalle", "Mostrar ejemplos prácticos", "Comparar alternativas", "Resumir puntos clave", "Profundizar en el tema", "Aplicaciones prácticas". Responde SOLO con un array JSON de strings, sin texto adicional.' },
       ...context.map((m: Message) => ({ role: m.role, content: m.content })),
       { role: 'user', content: user_message },
       { role: 'assistant', content: assistant_message.substring(0, 1000) },
-      { role: 'user', content: 'Genera 3 preguntas personales y conversacionales basadas en el contexto.' }
+      { role: 'user', content: 'Genera 6 sugerencias genéricas y directas sobre el tema.' }
     ]
 
     // Call OpenAI API
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: contextMessages,
-        temperature: 0.7,
-        max_tokens: 150
+        temperature: 0.8,
+        max_tokens: 200
       })
     })
 
@@ -75,26 +75,32 @@ export async function POST(req: NextRequest) {
       console.error('Failed to parse suggestions:', parseError)
       // Fallback suggestions
       suggestions = [
-        '¿Quieres que profundice más?',
-        '¿Te ayudo con algo más?',
-        '¿Necesitas ejemplos?'
+        'Explicar con más detalle',
+        'Mostrar ejemplos prácticos',
+        'Comparar alternativas',
+        'Resumir puntos clave',
+        'Profundizar en el tema',
+        'Aplicaciones prácticas'
       ]
     }
 
-    // Ensure we have exactly 3 suggestions
-    if (suggestions.length < 3) {
+    // Ensure we have at least 6 suggestions
+    if (suggestions.length < 6) {
       const fallbacks = [
-        '¿Te explico más detalles?',
-        '¿Hacemos algo con esto?',
-        '¿Quieres que continúe?'
+        'Explicar paso a paso',
+        'Ventajas y desventajas',
+        'Casos de uso',
+        'Mejores prácticas',
+        'Errores comunes',
+        'Recursos adicionales'
       ]
-      while (suggestions.length < 3) {
-        suggestions.push(fallbacks[suggestions.length] || '¿Algo más?')
+      while (suggestions.length < 6) {
+        suggestions.push(fallbacks[suggestions.length] || 'Más información')
       }
     }
 
-    return NextResponse.json({ 
-      suggestions: suggestions.slice(0, 3)
+    return NextResponse.json({
+      suggestions: suggestions.slice(0, 6)
     })
 
   } catch (error) {

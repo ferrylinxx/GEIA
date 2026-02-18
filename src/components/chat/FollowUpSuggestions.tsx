@@ -10,6 +10,8 @@ interface FollowUpSuggestionsProps {
 
 export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [allSuggestions, setAllSuggestions] = useState<string[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(false)
   const [visible, setVisible] = useState(false)
   const { isStreaming, streamingContent, messages, activeConversationId } = useChatStore()
@@ -57,7 +59,10 @@ export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSugg
 
         if (response.ok) {
           const data = await response.json()
-          setSuggestions(data.suggestions || [])
+          const allSuggs = data.suggestions || []
+          setAllSuggestions(allSuggs)
+          setSuggestions(allSuggs.slice(0, 3))
+          setCurrentIndex(0)
         }
       } catch (error) {
         console.error('Failed to generate suggestions:', error)
@@ -70,6 +75,35 @@ export default function FollowUpSuggestions({ onSelectSuggestion }: FollowUpSugg
     const timer = setTimeout(generateSuggestions, 500)
     return () => clearTimeout(timer)
   }, [isStreaming, messages, activeConversationId])
+
+  // Rotate suggestions every 5 seconds
+  useEffect(() => {
+    if (!visible || loading || allSuggestions.length <= 3) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => {
+        const next = prev + 3
+        if (next >= allSuggestions.length) return 0
+        return next
+      })
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [visible, loading, allSuggestions.length])
+
+  // Update displayed suggestions when index changes
+  useEffect(() => {
+    if (allSuggestions.length > 0) {
+      const displayed = allSuggestions.slice(currentIndex, currentIndex + 3)
+      if (displayed.length < 3 && allSuggestions.length >= 3) {
+        // Wrap around
+        const remaining = 3 - displayed.length
+        setSuggestions([...displayed, ...allSuggestions.slice(0, remaining)])
+      } else {
+        setSuggestions(displayed)
+      }
+    }
+  }, [currentIndex, allSuggestions])
 
   if (!visible || (!loading && suggestions.length === 0)) {
     return null
