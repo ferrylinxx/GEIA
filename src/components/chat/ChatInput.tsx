@@ -101,6 +101,13 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       audio.play()
         .then(() => {
           console.log('[Sound] MP3 notification playing...')
+
+          // Detener el audio después de 5 segundos
+          setTimeout(() => {
+            audio.pause()
+            audio.currentTime = 0
+            console.log('[Sound] MP3 stopped after 5 seconds')
+          }, 5000) // 5000ms = 5 segundos
         })
         .catch((error) => {
           console.error('[Sound] Error playing MP3:', error)
