@@ -2273,6 +2273,7 @@ export async function POST(req: NextRequest) {
     network_drive_rag = false,
     image_generation = false,
     deep_research = false,
+    browser_agent = false,
     document_generation = false,
     ocr_mode = false,
     spreadsheet_analysis = false,
@@ -3621,6 +3622,88 @@ REGLAS OBLIGATORIAS:
       console.error('[DeepResearch] Error:', e)
     }
   }
+
+  // Browser Agent - Autonomous browser control
+  let browserAgentResults: string | null = null
+  const browserAgentEvents: Array<{ type: string; message: string; data?: unknown; url?: string; progress?: number }> = []
+
+  if (browser_agent && inputText) {
+    try {
+      console.log('[BrowserAgent] Starting browser automation for:', inputText)
+
+      // Determine action type from input
+      const lowerInput = inputText.toLowerCase()
+      const isVisitAction = lowerInput.includes('visita') || lowerInput.includes('abre') ||
+                           lowerInput.includes('navega a') || lowerInput.includes('entra en') ||
+                           lowerInput.includes('visit') || lowerInput.includes('open') ||
+                           lowerInput.includes('navigate to')
+
+      // Extract URL if present
+      const urlMatch = inputText.match(/https?:\/\/[^\s]+/) ||
+                      inputText.match(/www\.[^\s]+/) ||
+                      inputText.match(/[a-zA-Z0-9-]+\.(com|org|net|es|cat|io|dev)[^\s]*/)
+
+      const action = isVisitAction && urlMatch ? 'visit' : 'search'
+      const query = urlMatch ? urlMatch[0] : inputText
+
+      console.log('[BrowserAgent] Action:', action, '| Query:', query)
+
+      // Call browser agent API (internal fetch, no auth needed)
+      const browserRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/browser-agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, action }),
+      })
+
+      if (browserRes.ok && browserRes.body) {
+        const reader = browserRes.body.getReader()
+        const decoder = new TextDecoder()
+        let browserContent = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6))
+                if (eventData.type === 'browser_event' && eventData.data) {
+                  // Store events to send later when we have controller
+                  browserAgentEvents.push({
+                    type: eventData.data.type,
+                    message: eventData.data.message,
+                    data: eventData.data.data,
+                    url: eventData.data.url,
+                    progress: eventData.data.progress
+                  })
+
+                  // Collect content for context
+                  if (eventData.data.data?.content) {
+                    browserContent += eventData.data.data.content + '\n\n'
+                  }
+                }
+              } catch (parseErr) {
+                console.error('[BrowserAgent] Parse error:', parseErr)
+              }
+            }
+          }
+        }
+
+        if (browserContent.trim()) {
+          browserAgentResults = browserContent.trim()
+          systemPrompt += `\n\n[NAVEGADOR AUTONOMO - CONTENIDO EXTRAIDO]\nFecha: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.\nAccion: ${action === 'visit' ? 'Visita de página web' : 'Búsqueda en Google'}\nURL/Query: ${query}\n\nContenido extraído:\n${browserContent}\n\nUsa este contenido real extraído del navegador para responder con precisión.`
+          console.log('[BrowserAgent] Content extracted:', browserContent.length, 'characters')
+        }
+      }
+    } catch (e) {
+      console.error('[BrowserAgent] Error:', e)
+    }
+  }
+
   // DB Query context
   if (db_query && inputText) {
     try {
@@ -4097,6 +4180,13 @@ REGLAS OBLIGATORIAS:
           }
 
           sendResearchEvent('complete', '✅ Investigación profunda completada, generando respuesta...', undefined, controller, undefined, 100)
+        }
+
+        // Send browser agent events if applicable
+        if (browser_agent && browserAgentEvents.length > 0) {
+          for (const event of browserAgentEvents) {
+            sendResearchEvent(event.type, event.message, event.data, controller, event.url, event.progress)
+          }
         }
 
         if (preResponseVisualPrefix) {

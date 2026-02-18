@@ -315,6 +315,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     let autoDbQuery = dbQuery
     let autoNetworkRag = networkDriveRag
     let autoDeepResearch = deepResearch
+    let autoBrowserAgent = browserAgent
     let autoDocumentGeneration = documentGeneration
     let autoSpreadsheetAnalysis = spreadsheetAnalysis
 
@@ -395,6 +396,20 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       autoDeepResearch = true
       autoWebSearch = true
       console.log('[Auto-Tool] ðŸ”¬ Deep research activated by keyword')
+    }
+
+    // Browser Agent keywords
+    if (!autoBrowserAgent && (
+      lowerText.includes('navega a') || lowerText.includes('abre la pagina') ||
+      lowerText.includes('visita la web') || lowerText.includes('entra en') ||
+      lowerText.includes('accede a la web') || lowerText.includes('abre el navegador') ||
+      lowerText.includes('browse to') || lowerText.includes('navigate to') ||
+      lowerText.includes('open browser') || lowerText.includes('visit website') ||
+      lowerText.includes('captura de pantalla') || lowerText.includes('screenshot') ||
+      lowerText.includes('navega por') || lowerText.includes('explora la web')
+    )) {
+      autoBrowserAgent = true
+      console.log('[Auto-Tool] 🌐 Browser Agent activated by keyword')
     }
 
     // Document generation keywords - DISABLED (user request)
@@ -570,6 +585,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
             network_drive_rag: autoNetworkRag, image_generation: autoImageGen,
             deep_research: autoDeepResearch,
             research_mode: researchMode,
+            browser_agent: autoBrowserAgent,
             document_generation: autoDocumentGeneration,
             spreadsheet_analysis: autoSpreadsheetAnalysis,
             attachments: attachmentsPayload.map(a => a.file_id),
@@ -1159,6 +1175,18 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                   <FlaskConical size={18} className={deepResearch ? 'text-amber-600' : 'text-amber-500'} />
                   {t.chatInput.deepResearch}
                   {deepResearch && <Check size={16} className="ml-auto text-amber-600" />}
+                </button>
+              )}
+              {toolPermissions.browserAgent && (
+                <button
+                  onClick={() => { setBrowserAgent(!browserAgent) }}
+                  className={`w-full text-left px-3 py-3 text-[15px] flex items-center gap-3 transition-colors rounded-2xl font-semibold ${
+                    browserAgent ? 'bg-purple-50/80 text-purple-700' : 'text-zinc-800 hover:bg-white/60'
+                  }`}
+                >
+                  <Chrome size={18} className={browserAgent ? 'text-purple-600' : 'text-purple-500'} />
+                  {t.chatInput.browserAgent}
+                  {browserAgent && <Check size={16} className="ml-auto text-purple-600" />}
                 </button>
               )}
               {toolPermissions.documentGeneration && (
