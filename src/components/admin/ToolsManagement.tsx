@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Globe, Database, HardDrive, ImagePlus, FlaskConical, FileText, BarChart3, Code2, Loader2, ChevronDown } from 'lucide-react'
+import { Globe, Database, HardDrive, ImagePlus, FlaskConical, FileText, BarChart3, Code2, Loader2, ChevronDown, Chrome } from 'lucide-react'
 
 interface Role {
   id: string
@@ -22,6 +22,7 @@ const TOOLS: ToolDefinition[] = [
   { id: 'network_drive_rag', name: 'Unidad de Red', description: 'Acceder a archivos de red', icon: HardDrive, color: 'text-emerald-500' },
   { id: 'image_generation', name: 'Generar Imagen', description: 'Crear imágenes con IA', icon: ImagePlus, color: 'text-purple-500' },
   { id: 'deep_research', name: 'Investigación Profunda', description: 'Análisis detallado de temas', icon: FlaskConical, color: 'text-amber-500' },
+  { id: 'browser_agent', name: 'Navegador Autónomo', description: 'Control de navegador con IA', icon: Chrome, color: 'text-violet-500' },
   { id: 'document_generation', name: 'Generar Documento', description: 'Crear documentos automáticamente', icon: FileText, color: 'text-sky-500' },
   { id: 'spreadsheet_analysis', name: 'Análisis de Hojas', description: 'Analizar hojas de cálculo', icon: BarChart3, color: 'text-cyan-500' },
   { id: 'code_interpreter', name: 'Intérprete de Código', description: 'Ejecutar código Python', icon: Code2, color: 'text-rose-500' },
