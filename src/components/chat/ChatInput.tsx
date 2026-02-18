@@ -97,20 +97,20 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       const now = ctx.currentTime
       const gain = ctx.createGain()
       gain.gain.setValueAtTime(0.0001, now)
-      gain.gain.linearRampToValueAtTime(0.08, now + 0.02)
+      gain.gain.linearRampToValueAtTime(0.10, now + 0.02)
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32)
       gain.connect(ctx.destination)
 
       const toneA = ctx.createOscillator()
       toneA.type = 'sine'
-      toneA.frequency.setValueAtTime(880, now)
-      toneA.frequency.exponentialRampToValueAtTime(1174, now + 0.14)
+      toneA.frequency.setValueAtTime(1760, now)
+      toneA.frequency.exponentialRampToValueAtTime(2349, now + 0.14)
       toneA.connect(gain)
 
       const toneB = ctx.createOscillator()
       toneB.type = 'sine'
-      toneB.frequency.setValueAtTime(1320, now + 0.15)
-      toneB.frequency.exponentialRampToValueAtTime(1760, now + 0.30)
+      toneB.frequency.setValueAtTime(2637, now + 0.15)
+      toneB.frequency.exponentialRampToValueAtTime(3520, now + 0.30)
       toneB.connect(gain)
 
       toneA.start(now)
