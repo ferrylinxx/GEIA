@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
             type: 'browser_event',
             data: { type, message, data, url, progress, screenshot, timestamp: Date.now() }
           }
+          console.log('[BrowserAgent API] Sending event:', type, message)
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
         } catch (err) {
           console.error('[BrowserAgent] Failed to send event:', err)

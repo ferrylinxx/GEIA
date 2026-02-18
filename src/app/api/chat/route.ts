@@ -3656,6 +3656,7 @@ REGLAS OBLIGATORIAS:
       })
 
       if (browserRes.ok && browserRes.body) {
+        console.log('[BrowserAgent] Response OK, reading stream...')
         const reader = browserRes.body.getReader()
         const decoder = new TextDecoder()
         let browserContent = ''
@@ -3671,6 +3672,8 @@ REGLAS OBLIGATORIAS:
             if (line.startsWith('data: ')) {
               try {
                 const eventData = JSON.parse(line.slice(6))
+                console.log('[BrowserAgent] Event received:', eventData.type, eventData.data?.type)
+
                 if (eventData.type === 'browser_event' && eventData.data) {
                   // Store events to send later when we have controller
                   browserAgentEvents.push({
@@ -3680,6 +3683,7 @@ REGLAS OBLIGATORIAS:
                     url: eventData.data.url,
                     progress: eventData.data.progress
                   })
+                  console.log('[BrowserAgent] Event stored, total events:', browserAgentEvents.length)
 
                   // Collect content for context
                   if (eventData.data.data?.content) {
@@ -3692,6 +3696,7 @@ REGLAS OBLIGATORIAS:
             }
           }
         }
+        console.log('[BrowserAgent] Stream finished, total events:', browserAgentEvents.length)
 
         if (browserContent.trim()) {
           browserAgentResults = browserContent.trim()
@@ -4184,7 +4189,9 @@ REGLAS OBLIGATORIAS:
 
         // Send browser agent events if applicable
         if (browser_agent && browserAgentEvents.length > 0) {
+          console.log('[BrowserAgent] Sending', browserAgentEvents.length, 'events to client')
           for (const event of browserAgentEvents) {
+            console.log('[BrowserAgent] Forwarding event:', event.type, event.message)
             sendResearchEvent(event.type, event.message, event.data, controller, event.url, event.progress)
           }
         }
