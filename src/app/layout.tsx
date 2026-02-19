@@ -6,6 +6,7 @@ import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
 import { ActivityProvider } from "@/contexts/ActivityContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ThemeEffects } from "@/components/theme/ThemeEffects";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
 import "./globals.css";
 import "@/styles/themes/halloween.css";
 import "@/styles/themes/navidad.css";
@@ -21,8 +22,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GIA",
-  description: "GIA, la IA de GESEM para chat, investigacion, documentos y productividad empresarial.",
+  title: "GEIA - Gestión Empresarial con IA",
+  description: "Plataforma de gestión empresarial potenciada con inteligencia artificial",
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/x-icon" },
@@ -31,6 +32,19 @@ export const metadata: Metadata = {
     ],
     shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.json",
+  themeColor: "#8B5CF6",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "GEIA",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
   },
 };
 
@@ -56,6 +70,22 @@ export default function RootLayout({
             window.gtag('config', '${gaMeasurementId}', { send_page_view: false });
           `}
         </Script>
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function(registration) {
+                    console.log('[PWA] Service Worker registered:', registration.scope);
+                  },
+                  function(err) {
+                    console.log('[PWA] Service Worker registration failed:', err);
+                  }
+                );
+              });
+            }
+          `}
+        </Script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -67,6 +97,7 @@ export default function RootLayout({
               <AnalyticsTracker />
             </Suspense>
             {children}
+            <InstallPrompt />
           </ActivityProvider>
         </ThemeProvider>
       </body>
