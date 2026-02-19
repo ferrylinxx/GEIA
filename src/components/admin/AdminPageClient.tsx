@@ -578,10 +578,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }, [tab, themes.length])
 
   useEffect(() => {
-    if ((tab === 'notification-sound' || tab === 'notification-message') && !notificationSettings.sound_url) {
+    if (tab === 'notification-sound' || tab === 'notification-message') {
       void loadNotificationSettings()
     }
-  }, [tab, notificationSettings.sound_url])
+  }, [tab])
 
   const loadAdminFiles = async (query = filesQuery) => {
     setFilesLoading(true)

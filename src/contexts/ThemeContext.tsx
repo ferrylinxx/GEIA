@@ -42,7 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const loadActiveTheme = async () => {
     try {
-      const supabase = createBrowserSupabaseClient()
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('app_themes')
         .select('*')
