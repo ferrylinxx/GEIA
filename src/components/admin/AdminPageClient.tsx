@@ -1695,76 +1695,142 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         )}
       </header>
 
-      {/* Mobile Drawer Menu */}
+      {/* Modern Mobile Menu */}
       {mobileMenuOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop with Blur */}
           <div
-            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            className="lg:hidden fixed inset-0 bg-gradient-to-br from-black/60 via-blue-900/40 to-indigo-900/40 backdrop-blur-md z-40 animate-in fade-in duration-300"
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          {/* Drawer */}
-          <div className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-white z-50 shadow-2xl animate-in slide-in-from-left duration-300">
-            {/* Drawer Header */}
-            <div className="p-4 border-b border-zinc-200 bg-gradient-to-r from-blue-500 to-indigo-600">
-              <div className="flex items-center justify-between">
+          {/* Modern Floating Menu Panel */}
+          <div className="lg:hidden fixed inset-x-4 top-20 bottom-24 bg-white/95 backdrop-blur-2xl z-50 rounded-3xl shadow-2xl border border-white/20 animate-in zoom-in-95 slide-in-from-top-10 duration-500 overflow-hidden"
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.5)'
+            }}
+          >
+            {/* Modern Header with Gradient */}
+            <div className="relative p-6 pb-8 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 overflow-hidden">
+              {/* Animated Background Blobs */}
+              <div className="absolute inset-0 opacity-30">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse" />
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-cyan-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+              </div>
+
+              <div className="relative flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
-                    <Shield size={20} className="text-white" />
+                  <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-lg">
+                    <Shield size={24} className="text-white" />
                   </div>
                   <div>
-                    <h2 className="text-white font-bold text-sm">Panel Admin</h2>
-                    <p className="text-white/80 text-xs">Menú de navegación</p>
+                    <h2 className="text-white font-bold text-lg tracking-tight">Panel Admin</h2>
+                    <p className="text-white/90 text-xs font-medium">Gestión del sistema</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
+                  className="p-2.5 hover:bg-white/20 rounded-xl text-white transition-all hover:scale-110 active:scale-95"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative mt-4">
+                <input
+                  type="text"
+                  placeholder="Buscar sección..."
+                  className="w-full px-4 py-3 pl-11 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-white placeholder-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+                />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/70" size={18} />
               </div>
             </div>
 
-            {/* Drawer Content */}
-            <div className="overflow-y-auto h-[calc(100vh-80px)] pb-20">
-              {/* Principal Section */}
-              <div className="p-3">
-                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 mb-2">Principal</p>
-                <div className="space-y-1">
+            {/* Modern Grid Menu */}
+            <div className="overflow-y-auto h-[calc(100%-180px)] px-4 py-6 space-y-6">
+              {/* Quick Access Cards */}
+              <div>
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider px-1 mb-3">Acceso Rápido</h3>
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => { setTab('dashboard'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                    className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
                       tab === 'dashboard'
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                        : 'text-zinc-700 hover:bg-zinc-100'
+                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/50 scale-105'
+                        : 'bg-white/60 backdrop-blur-sm border border-zinc-200/50 hover:shadow-lg hover:scale-105 active:scale-95'
                     }`}
                   >
-                    <Shield size={18} />
-                    <span className="text-sm font-medium">Dashboard</span>
+                    <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <div className="relative">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                        tab === 'dashboard' ? 'bg-white/20' : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                      }`}>
+                        <Home size={20} className={tab === 'dashboard' ? 'text-white' : 'text-white'} />
+                      </div>
+                      <p className={`text-sm font-bold ${tab === 'dashboard' ? 'text-white' : 'text-zinc-800'}`}>Dashboard</p>
+                      <p className={`text-xs ${tab === 'dashboard' ? 'text-white/80' : 'text-zinc-500'}`}>Vista general</p>
+                    </div>
                   </button>
+
                   <button
                     onClick={() => { setTab('users'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                    className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
                       tab === 'users'
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                        : 'text-zinc-700 hover:bg-zinc-100'
+                        ? 'bg-gradient-to-br from-purple-500 to-pink-600 shadow-xl shadow-purple-500/50 scale-105'
+                        : 'bg-white/60 backdrop-blur-sm border border-zinc-200/50 hover:shadow-lg hover:scale-105 active:scale-95'
                     }`}
                   >
-                    <Users size={18} />
-                    <span className="text-sm font-medium">Usuarios</span>
+                    <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <div className="relative">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                        tab === 'users' ? 'bg-white/20' : 'bg-gradient-to-br from-purple-500 to-pink-600'
+                      }`}>
+                        <Users size={20} className={tab === 'users' ? 'text-white' : 'text-white'} />
+                      </div>
+                      <p className={`text-sm font-bold ${tab === 'users' ? 'text-white' : 'text-zinc-800'}`}>Usuarios</p>
+                      <p className={`text-xs ${tab === 'users' ? 'text-white/80' : 'text-zinc-500'}`}>Gestión</p>
+                    </div>
                   </button>
+
                   <button
                     onClick={() => { setTab('analytics'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                    className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
                       tab === 'analytics'
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                        : 'text-zinc-700 hover:bg-zinc-100'
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/50 scale-105'
+                        : 'bg-white/60 backdrop-blur-sm border border-zinc-200/50 hover:shadow-lg hover:scale-105 active:scale-95'
                     }`}
                   >
-                    <BarChart3 size={18} />
-                    <span className="text-sm font-medium">Analytics</span>
+                    <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <div className="relative">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                        tab === 'analytics' ? 'bg-white/20' : 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                      }`}>
+                        <BarChart3 size={20} className={tab === 'analytics' ? 'text-white' : 'text-white'} />
+                      </div>
+                      <p className={`text-sm font-bold ${tab === 'analytics' ? 'text-white' : 'text-zinc-800'}`}>Analytics</p>
+                      <p className={`text-xs ${tab === 'analytics' ? 'text-white/80' : 'text-zinc-500'}`}>Estadísticas</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => { setTab('models'); setMobileMenuOpen(false); }}
+                    className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                      tab === 'models'
+                        ? 'bg-gradient-to-br from-orange-500 to-red-600 shadow-xl shadow-orange-500/50 scale-105'
+                        : 'bg-white/60 backdrop-blur-sm border border-zinc-200/50 hover:shadow-lg hover:scale-105 active:scale-95'
+                    }`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <div className="relative">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                        tab === 'models' ? 'bg-white/20' : 'bg-gradient-to-br from-orange-500 to-red-600'
+                      }`}>
+                        <Bot size={20} className={tab === 'models' ? 'text-white' : 'text-white'} />
+                      </div>
+                      <p className={`text-sm font-bold ${tab === 'models' ? 'text-white' : 'text-zinc-800'}`}>Modelos</p>
+                      <p className={`text-xs ${tab === 'models' ? 'text-white/80' : 'text-zinc-500'}`}>IA</p>
+                    </div>
                   </button>
                 </div>
               </div>
