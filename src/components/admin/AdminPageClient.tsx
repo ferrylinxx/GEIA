@@ -1682,8 +1682,27 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         )}
       </header>
 
+      {/* Mobile Navigation - Horizontal Scroll */}
+      <div className="lg:hidden sticky top-[57px] md:top-[65px] z-20 bg-white/90 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm">
+        <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl whitespace-nowrap transition-all duration-200 ${
+                tab === t.id
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30'
+                  : 'bg-white text-zinc-600 hover:bg-zinc-100 font-medium border border-zinc-200'
+              }`}>
+              <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
+                {t.icon}
+              </div>
+              <span className="hidden sm:inline">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex relative z-10">
-        {/* Sidebar tabs - Mejorado y Responsive */}
+        {/* Sidebar tabs - Desktop Only */}
         <nav className="hidden lg:flex lg:flex-col w-72 liquid-glass-sidebar min-h-[calc(100vh-65px)] p-6 space-y-2 bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-xl border-r border-zinc-200/50 shadow-xl">
           <div className="mb-6 pb-6 border-b border-zinc-200/50">
             <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -1705,25 +1724,6 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
             </button>
           ))}
         </nav>
-
-        {/* Mobile Navigation - Horizontal Scroll */}
-        <div className="lg:hidden w-full sticky top-[57px] md:top-[65px] z-20 bg-white/90 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm">
-          <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl whitespace-nowrap transition-all duration-200 ${
-                  tab === t.id
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30'
-                    : 'bg-white text-zinc-600 hover:bg-zinc-100 font-medium border border-zinc-200'
-                }`}>
-                <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
-                  {t.icon}
-                </div>
-                <span className="hidden sm:inline">{t.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Content - Responsive */}
         <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
