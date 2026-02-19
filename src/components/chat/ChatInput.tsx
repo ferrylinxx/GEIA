@@ -63,6 +63,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
   const {
     activeConversationId, projectContextId, createConversation, isStreaming,
     setIsStreaming, setStreamingContent, selectedModel, selectedAgent, streamingContent,
+    streamingConversationId,
     setStreamingConversationId,
     setStreamAbortController,
     abortStreaming,
@@ -679,9 +680,15 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       if (completed && !wasAborted) {
         playNotificationSound()
 
-        // Obtener título del chat actual
-        const currentConversation = conversations.find(c => c.id === convId)
+        // Esperar un momento para que las conversaciones se recarguen
+        await loadConversations()
+
+        // Obtener título del chat actual usando streamingConversationId o convId
+        const conversationId = streamingConversationId || convId
+        const currentConversation = conversations.find(c => c.id === conversationId)
         const chatTitle = currentConversation?.title || 'Nuevo chat'
+
+        console.log('[Notification] Preparing notification for conversation:', conversationId, 'Title:', chatTitle)
 
         // Crear preview del mensaje (primeras 150 caracteres del contenido streaming)
         const cleanContent = streamingContent
@@ -704,6 +711,8 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                          selectedModel.includes('claude') ? 'Claude' :
                          selectedModel.includes('gemini') ? 'Gemini' : 'IA'
 
+        console.log('[Notification] Showing notification:', { chatTitle, modelName, previewLength: previewText.length })
+
         showNotification(`🤖 GEIA • ${chatTitle}`, {
           body: `${modelName} ha respondido:\n\n${previewText}`,
           tag: 'geia-response-complete',
@@ -720,7 +729,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       setStreamingContent('')
       setStreamAbortController(null)
     }
-  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId, conversations, streamingContent])
+  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId, conversations, streamingContent, streamingConversationId])
 
   const handleStop = () => {
     abortStreaming()
