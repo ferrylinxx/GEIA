@@ -274,7 +274,8 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     if (!ttsEnabled || !justFinished) return
     if (!('speechSynthesis' in window)) return
 
-    const rawText = (streamingContent || lastStreamedResponseRef.current)
+    const content = streamingContent || lastStreamedResponseRef.current || ''
+    const rawText = content
       .replace(/[#*_`~\[\]()]/g, '')
       .substring(0, 5000)
 

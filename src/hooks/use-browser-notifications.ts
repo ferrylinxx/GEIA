@@ -163,7 +163,7 @@ export function useBrowserNotifications() {
       console.log('[Notifications] Notification created successfully')
 
       // Play sound if configured
-      if (settings.sound_url) {
+      if (settings.sound_url && settings.sound_url !== null && settings.sound_url.trim() !== '') {
         try {
           console.log('[Notifications] Playing sound:', settings.sound_url)
           const audio = new Audio(settings.sound_url)
@@ -174,6 +174,8 @@ export function useBrowserNotifications() {
         } catch (err) {
           console.error('[Notifications] Error creating audio:', err)
         }
+      } else {
+        console.log('[Notifications] No sound configured, skipping audio playback')
       }
 
       // Auto-close after configured duration
