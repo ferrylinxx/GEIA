@@ -72,7 +72,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     documentGeneration, setDocumentGeneration,
     spreadsheetAnalysis, setSpreadsheetAnalysis,
     codeInterpreter, setCodeInterpreter,
-    addMessage, loadMessages, loadConversations,
+    addMessage, loadMessages, loadConversations, conversations,
   } = useChatStore()
   const { setToolStatus, openFilePreview, soundEnabled, addToast } = useUIStore()
   const { showNotification } = useBrowserNotifications()
@@ -678,9 +678,29 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       setToolStatus('idle')
       if (completed && !wasAborted) {
         playNotificationSound()
-        showNotification('GEIA - Respuesta completada', {
-          body: 'Tu asistente ha terminado de responder',
+
+        // Obtener título del chat actual
+        const currentConversation = conversations.find(c => c.id === convId)
+        const chatTitle = currentConversation?.title || 'Nuevo chat'
+
+        // Crear preview del mensaje (primeras 120 caracteres del contenido streaming)
+        const cleanContent = streamingContent
+          .replace(/\*\*/g, '') // Eliminar markdown bold
+          .replace(/\*/g, '') // Eliminar markdown italic
+          .replace(/`/g, '') // Eliminar markdown code
+          .replace(/#{1,6}\s/g, '') // Eliminar markdown headers
+          .replace(/\n+/g, ' ') // Reemplazar saltos de línea con espacios
+          .trim()
+
+        const messagePreview = cleanContent.slice(0, 120)
+        const previewText = messagePreview.length > 0
+          ? messagePreview + (cleanContent.length > 120 ? '...' : '')
+          : 'Respuesta completada'
+
+        showNotification(`💬 ${chatTitle}`, {
+          body: `✨ ${previewText}`,
           tag: 'geia-response-complete',
+          icon: '/logo.png',
         })
       }
       // Reload silently before clearing streamed content to avoid visual flicker.
@@ -690,7 +710,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       setStreamingContent('')
       setStreamAbortController(null)
     }
-  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId])
+  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId, conversations, streamingContent])
 
   const handleStop = () => {
     abortStreaming()
