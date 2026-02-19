@@ -4732,12 +4732,20 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               </p>
             </div>
 
-            {notificationSettings.sound_url && (
+            {notificationSettings.sound_url && notificationSettings.sound_url !== null && notificationSettings.sound_url.trim() !== '' && (
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-2">Vista Previa del Sonido</label>
                 <audio controls src={notificationSettings.sound_url} className="w-full" />
                 <p className="text-xs text-green-600 mt-2">
                   ✅ Sonido configurado correctamente
+                </p>
+              </div>
+            )}
+
+            {(!notificationSettings.sound_url || notificationSettings.sound_url === null || notificationSettings.sound_url.trim() === '') && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-xs text-amber-700">
+                  ℹ️ No hay sonido configurado. Sube un archivo MP3 para activar las notificaciones sonoras.
                 </p>
               </div>
             )}

@@ -695,7 +695,8 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
         console.log('[Notification] Preparing notification for conversation:', conversationId, 'Title:', chatTitle)
 
         // Crear preview del mensaje (primeras 150 caracteres del contenido streaming)
-        const cleanContent = streamingContent
+        const contentToClean = streamingContent || ''
+        const cleanContent = contentToClean
           .replace(/\*\*/g, '') // Eliminar markdown bold
           .replace(/\*/g, '') // Eliminar markdown italic
           .replace(/`/g, '') // Eliminar markdown code
@@ -715,13 +716,9 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                          selectedModel.includes('claude') ? 'Claude' :
                          selectedModel.includes('gemini') ? 'Gemini' : 'IA'
 
-        // Apply notification templates from settings
-        const notificationTitle = notificationSettings.message_template
-          .replace('{chatTitle}', chatTitle)
-
-        const notificationBody = notificationSettings.message_body_template
-          .replace('{modelName}', modelName)
-          .replace('{preview}', previewText)
+        // Create notification title and body
+        const notificationTitle = `🤖 GEIA • ${chatTitle}`
+        const notificationBody = `${modelName} ha respondido:\n\n${previewText}`
 
         console.log('[Notification] Showing notification:', { chatTitle, modelName, previewLength: previewText.length, title: notificationTitle, body: notificationBody })
 
