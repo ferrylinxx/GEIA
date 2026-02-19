@@ -88,7 +88,7 @@ export default function JobMonitor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     )
   }
@@ -96,12 +96,12 @@ export default function JobMonitor() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Activity className="w-6 h-6 text-purple-500" />
-        <h2 className="text-xl font-bold text-white">Monitor de Entrenamiento</h2>
+        <Activity className="w-6 h-6 text-blue-600" />
+        <h2 className="text-xl font-bold text-zinc-800">Monitor de Entrenamiento</h2>
       </div>
 
       {jobs.length === 0 ? (
-        <div className="text-center text-white/60 p-12 bg-white/5 border border-white/10 rounded-lg">
+        <div className="text-center text-zinc-600 p-12 bg-white/80 backdrop-blur-sm border border-zinc-200 rounded-xl">
           No hay trabajos de fine-tuning en progreso
         </div>
       ) : (
@@ -109,22 +109,22 @@ export default function JobMonitor() {
           {jobs.map(job => (
             <div
               key={job.id}
-              className="bg-white/5 border border-white/10 rounded-lg p-6 hover:border-purple-500/50 transition-all"
+              className="bg-white/80 backdrop-blur-sm border border-zinc-200 rounded-xl p-6 hover:border-blue-400 hover:shadow-xl transition-all"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {getStatusIcon(job.status)}
                   <div>
-                    <h3 className="font-semibold text-white">
+                    <h3 className="font-semibold text-zinc-800">
                       {job.fine_tuned_model_name || `Fine-tuning ${job.base_model}`}
                     </h3>
-                    <p className="text-sm text-white/60">
+                    <p className="text-sm text-zinc-600">
                       Dataset: {job.dataset?.name || 'N/A'} ({job.dataset?.total_examples || 0} ejemplos)
                     </p>
                   </div>
                 </div>
 
-                <span className={`px-3 py-1 rounded-full text-sm border ${getStatusColor(job.status)}`}>
+                <span className={`px-3 py-1 rounded-full text-sm border font-medium ${getStatusColor(job.status)}`}>
                   {getStatusLabel(job.status)}
                 </span>
               </div>
@@ -132,13 +132,13 @@ export default function JobMonitor() {
               {/* Progress bar */}
               {job.status === 'running' && job.progress_percentage !== undefined && (
                 <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm text-white/60 mb-2">
-                    <span>Progreso</span>
-                    <span>{job.progress_percentage}%</span>
+                  <div className="flex items-center justify-between text-sm text-zinc-600 mb-2">
+                    <span className="font-medium">Progreso</span>
+                    <span className="font-bold text-blue-600">{job.progress_percentage}%</span>
                   </div>
-                  <div className="w-full bg-white/10 rounded-full h-2">
+                  <div className="w-full bg-zinc-200 rounded-full h-2.5">
                     <div
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full transition-all duration-500"
                       style={{ width: `${job.progress_percentage}%` }}
                     />
                   </div>
@@ -147,7 +147,7 @@ export default function JobMonitor() {
 
               {/* Error message */}
               {job.error_message && (
-                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
+                <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm font-medium">
                   {job.error_message}
                 </div>
               )}
@@ -155,27 +155,27 @@ export default function JobMonitor() {
               {/* Metadata */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-white/60">Modelo base:</span>
-                  <p className="text-white font-medium">{job.base_model}</p>
+                  <span className="text-zinc-600">Modelo base:</span>
+                  <p className="text-zinc-800 font-medium">{job.base_model}</p>
                 </div>
                 <div>
-                  <span className="text-white/60">Creado:</span>
-                  <p className="text-white font-medium">
+                  <span className="text-zinc-600">Creado:</span>
+                  <p className="text-zinc-800 font-medium">
                     {new Date(job.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 {job.started_at && (
                   <div>
-                    <span className="text-white/60">Iniciado:</span>
-                    <p className="text-white font-medium">
+                    <span className="text-zinc-600">Iniciado:</span>
+                    <p className="text-zinc-800 font-medium">
                       {new Date(job.started_at).toLocaleTimeString()}
                     </p>
                   </div>
                 )}
                 {job.completed_at && (
                   <div>
-                    <span className="text-white/60">Completado:</span>
-                    <p className="text-white font-medium">
+                    <span className="text-zinc-600">Completado:</span>
+                    <p className="text-zinc-800 font-medium">
                       {new Date(job.completed_at).toLocaleTimeString()}
                     </p>
                   </div>

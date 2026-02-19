@@ -58,7 +58,7 @@ export default function ThemeGallery() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     )
   }
@@ -66,9 +66,9 @@ export default function ThemeGallery() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Palette className="w-6 h-6 text-purple-500" />
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <h2 className="text-2xl font-bold text-zinc-800 flex items-center gap-2">
+          <Palette className="w-6 h-6 text-blue-600" />
           Galería de Temas
         </h2>
 
@@ -76,30 +76,30 @@ export default function ThemeGallery() {
         <div className="flex gap-2">
           <button
             onClick={() => setSortBy('likes')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors font-medium ${
               sortBy === 'likes'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-white/80 text-zinc-700 hover:bg-white border border-zinc-200'
             }`}
           >
             Más gustados
           </button>
           <button
             onClick={() => setSortBy('usage')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors font-medium ${
               sortBy === 'usage'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-white/80 text-zinc-700 hover:bg-white border border-zinc-200'
             }`}
           >
             Más usados
           </button>
           <button
             onClick={() => setSortBy('created_at')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors font-medium ${
               sortBy === 'created_at'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-white/80 text-zinc-700 hover:bg-white border border-zinc-200'
             }`}
           >
             Más recientes
@@ -112,7 +112,7 @@ export default function ThemeGallery() {
         {themes.map(theme => (
           <div
             key={theme.id}
-            className="bg-white/5 border border-white/10 rounded-lg overflow-hidden hover:border-purple-500/50 transition-all group"
+            className="bg-white/80 backdrop-blur-sm border border-zinc-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all group"
           >
             {/* Theme preview */}
             <div
@@ -131,21 +131,21 @@ export default function ThemeGallery() {
             {/* Theme info */}
             <div className="p-4 space-y-3">
               <div>
-                <h3 className="font-semibold text-white text-lg">{theme.name}</h3>
+                <h3 className="font-semibold text-zinc-800 text-lg">{theme.name}</h3>
                 {theme.description && (
-                  <p className="text-sm text-white/60 line-clamp-2">{theme.description}</p>
+                  <p className="text-sm text-zinc-600 line-clamp-2">{theme.description}</p>
                 )}
               </div>
 
               {/* Stats */}
-              <div className="flex items-center gap-4 text-sm text-white/60">
+              <div className="flex items-center gap-4 text-sm text-zinc-600">
                 <div className="flex items-center gap-1">
-                  <Heart className="w-4 h-4" />
-                  <span>{theme.likes_count}</span>
+                  <Heart className="w-4 h-4 text-red-500" />
+                  <span className="font-medium">{theme.likes_count}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Eye className="w-4 h-4" />
-                  <span>{theme.usage_count}</span>
+                  <Eye className="w-4 h-4 text-blue-500" />
+                  <span className="font-medium">{theme.usage_count}</span>
                 </div>
               </div>
 
@@ -153,13 +153,13 @@ export default function ThemeGallery() {
               <div className="flex gap-2">
                 <button
                   onClick={() => toggleLike(theme.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-zinc-50 border border-zinc-300 text-zinc-700 rounded-lg transition-colors font-medium"
                 >
                   <Heart className="w-4 h-4" />
                   Me gusta
                 </button>
                 <button
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-lg"
                 >
                   <Download className="w-4 h-4" />
                   Usar
@@ -171,7 +171,7 @@ export default function ThemeGallery() {
       </div>
 
       {themes.length === 0 && (
-        <div className="text-center text-white/60 p-12">
+        <div className="text-center text-zinc-600 p-12 bg-white/80 backdrop-blur-sm border border-zinc-200 rounded-xl">
           No hay temas disponibles
         </div>
       )}
