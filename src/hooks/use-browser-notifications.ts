@@ -38,21 +38,55 @@ export function useBrowserNotifications() {
   }, [])
 
   const toggleNotifications = useCallback(async () => {
+    console.log('[Notifications] Toggle clicked. Current state:', { enabled, permission })
+
     if (!enabled) {
       // User wants to enable notifications
       if (permission === 'granted') {
+        console.log('[Notifications] Permission already granted, enabling...')
         setEnabled(true)
         localStorage.setItem('geia-browser-notifications', 'true')
+
+        // Show test notification
+        try {
+          new Notification('🎉 Notificaciones activadas', {
+            body: 'Recibirás notificaciones cuando GEIA termine de responder',
+            icon: '/logo.png',
+            badge: '/logo.png',
+          })
+        } catch (e) {
+          console.error('[Notifications] Error showing test notification:', e)
+        }
+
         return true
       } else if (permission === 'default') {
         // Request permission
-        return await requestPermission()
+        console.log('[Notifications] Requesting permission...')
+        const granted = await requestPermission()
+
+        if (granted) {
+          // Show test notification
+          try {
+            new Notification('🎉 Notificaciones activadas', {
+              body: 'Recibirás notificaciones cuando GEIA termine de responder',
+              icon: '/logo.png',
+              badge: '/logo.png',
+            })
+          } catch (e) {
+            console.error('[Notifications] Error showing test notification:', e)
+          }
+        }
+
+        return granted
       } else {
         // Permission denied, can't enable
+        console.log('[Notifications] Permission denied by user')
+        alert('⚠️ Las notificaciones están bloqueadas.\n\nPara activarlas:\n1. Haz clic en el icono de candado/información en la barra de direcciones\n2. Busca "Notificaciones"\n3. Cambia a "Permitir"')
         return false
       }
     } else {
       // User wants to disable notifications
+      console.log('[Notifications] Disabling notifications...')
       setEnabled(false)
       localStorage.setItem('geia-browser-notifications', 'false')
       return true
@@ -60,24 +94,42 @@ export function useBrowserNotifications() {
   }, [enabled, permission, requestPermission])
 
   const showNotification = useCallback((title: string, options?: NotificationOptions) => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return
-    if (!enabled || permission !== 'granted') return
+    console.log('[Notifications] showNotification called:', { title, enabled, permission })
+
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      console.log('[Notifications] Notifications not supported in this browser')
+      return
+    }
+
+    if (!enabled) {
+      console.log('[Notifications] Notifications are disabled by user')
+      return
+    }
+
+    if (permission !== 'granted') {
+      console.log('[Notifications] Permission not granted:', permission)
+      return
+    }
 
     try {
+      console.log('[Notifications] Creating notification...')
       const notification = new Notification(title, {
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
+        icon: '/logo.png',
+        badge: '/logo.png',
         ...options,
       })
 
-      // Auto-close after 5 seconds
+      console.log('[Notifications] Notification created successfully')
+
+      // Auto-close after 8 seconds
       setTimeout(() => {
         notification.close()
-      }, 5000)
+        console.log('[Notifications] Notification closed')
+      }, 8000)
 
       return notification
     } catch (error) {
-      console.error('Error showing notification:', error)
+      console.error('[Notifications] Error showing notification:', error)
     }
   }, [enabled, permission])
 
