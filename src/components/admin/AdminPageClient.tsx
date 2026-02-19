@@ -15,7 +15,7 @@ import {
   ArrowUp, ArrowDown, Shield, Loader2, Save, X, Check,
   ChevronRight, RefreshCw, MessageSquare, FileText, Database, GripVertical, Upload, HardDrive, Megaphone, ToggleLeft, ToggleRight, Search, Crown, MessageCircle,
   MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle,
-  Palette, Volume2, MessageSquareText, BarChart3, Brain, UserPlus
+  Palette, Volume2, MessageSquareText, BarChart3, Brain, UserPlus, Menu, Home, Settings, LayoutGrid
 } from 'lucide-react'
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard'
 import ThemeGallery from '@/components/themes/ThemeGallery'
@@ -198,6 +198,9 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [showDriveRolesDropdown, setShowDriveRolesDropdown] = useState(false)
   const [selectedAgentRoles, setSelectedAgentRoles] = useState<string[]>([])
   const [showAgentRolesDropdown, setShowAgentRolesDropdown] = useState(false)
+
+  // Mobile Menu
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // DB Connections
   const [connections, setConnections] = useState<DbConnection[]>([])
@@ -1660,9 +1663,19 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
       {/* Header - Mejorado y Responsive */}
       <header className="liquid-glass-header px-4 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-zinc-200/50 shadow-sm">
-        <button onClick={() => router.push('/chat')} className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 hover:text-zinc-900 transition-all duration-200 hover:scale-105">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="lg:hidden p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 hover:text-zinc-900 transition-all duration-200 hover:scale-105"
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* Back Button - Desktop Only */}
+        <button onClick={() => router.push('/chat')} className="hidden lg:block p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 hover:text-zinc-900 transition-all duration-200 hover:scale-105">
           <ArrowLeft size={18} />
         </button>
+
         <div className="flex items-center gap-2 md:gap-3">
           <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
             <Shield size={18} className="text-white" />
@@ -1682,22 +1695,342 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         )}
       </header>
 
-      {/* Mobile Navigation - Horizontal Scroll */}
-      <div className="lg:hidden sticky top-[57px] md:top-[65px] z-20 bg-white/90 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm">
-        <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl whitespace-nowrap transition-all duration-200 ${
-                tab === t.id
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium shadow-lg shadow-blue-500/30'
-                  : 'bg-white text-zinc-600 hover:bg-zinc-100 font-medium border border-zinc-200'
-              }`}>
-              <div className={`${tab === t.id ? 'text-white' : 'text-zinc-400'}`}>
-                {t.icon}
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-white z-50 shadow-2xl animate-in slide-in-from-left duration-300">
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-zinc-200 bg-gradient-to-r from-blue-500 to-indigo-600">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Shield size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-white font-bold text-sm">Panel Admin</h2>
+                    <p className="text-white/80 text-xs">Menú de navegación</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <span className="hidden sm:inline">{t.label}</span>
-            </button>
-          ))}
+            </div>
+
+            {/* Drawer Content */}
+            <div className="overflow-y-auto h-[calc(100vh-80px)] pb-20">
+              {/* Principal Section */}
+              <div className="p-3">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 mb-2">Principal</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { setTab('dashboard'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'dashboard'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Shield size={18} />
+                    <span className="text-sm font-medium">Dashboard</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('users'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'users'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Users size={18} />
+                    <span className="text-sm font-medium">Usuarios</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('analytics'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'analytics'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <BarChart3 size={18} />
+                    <span className="text-sm font-medium">Analytics</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Configuración Section */}
+              <div className="p-3">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 mb-2">Configuración</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { setTab('roles'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'roles'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Crown size={18} />
+                    <span className="text-sm font-medium">Roles y Permisos</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('tools'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'tools'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Code2 size={18} />
+                    <span className="text-sm font-medium">Herramientas</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('themes'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'themes'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Palette size={18} />
+                    <span className="text-sm font-medium">Temas</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('notification-sound'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'notification-sound'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Volume2 size={18} />
+                    <span className="text-sm font-medium">Sonido Notificación</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* IA y Modelos Section */}
+              <div className="p-3">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 mb-2">IA y Modelos</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { setTab('models'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'models'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Bot size={18} />
+                    <span className="text-sm font-medium">Modelos</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('providers'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'providers'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Plug size={18} />
+                    <span className="text-sm font-medium">Proveedores IA</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('agents'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'agents'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Zap size={18} />
+                    <span className="text-sm font-medium">Agentes IA</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('fine-tuning'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'fine-tuning'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Bot size={18} />
+                    <span className="text-sm font-medium">Fine-tuning</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Datos Section */}
+              <div className="p-3">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 mb-2">Datos</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { setTab('connections'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'connections'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Database size={18} />
+                    <span className="text-sm font-medium">Conexiones BD</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('network-drives'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'network-drives'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <HardDrive size={18} />
+                    <span className="text-sm font-medium">Unidades de Red</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('files'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'files'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <FileText size={18} />
+                    <span className="text-sm font-medium">Archivos Globales</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('document-analysis'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'document-analysis'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Sparkles size={18} />
+                    <span className="text-sm font-medium">Análisis de Documentos</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('memory'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'memory'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Brain size={18} />
+                    <span className="text-sm font-medium">Memoria</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Otros Section */}
+              <div className="p-3">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 mb-2">Otros</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { setTab('banners'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'banners'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Megaphone size={18} />
+                    <span className="text-sm font-medium">Banners</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('theme-gallery'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'theme-gallery'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <Palette size={18} />
+                    <span className="text-sm font-medium">Galería de Temas</span>
+                  </button>
+                  <button
+                    onClick={() => { setTab('collaboration'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      tab === 'collaboration'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <UserPlus size={18} />
+                    <span className="text-sm font-medium">Colaboración</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Back to Chat Button */}
+              <div className="p-3 border-t border-zinc-200">
+                <button
+                  onClick={() => router.push('/chat')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition-all"
+                >
+                  <ArrowLeft size={18} />
+                  <span className="text-sm font-medium">Volver al Chat</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Bottom Navigation - Mobile Only */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-zinc-200 shadow-2xl pb-safe">
+        <div className="grid grid-cols-4 gap-1 px-2 py-2">
+          <button
+            onClick={() => setTab('dashboard')}
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all ${
+              tab === 'dashboard'
+                ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-lg'
+                : 'text-zinc-600 hover:bg-zinc-100'
+            }`}
+          >
+            <Home size={20} />
+            <span className="text-[10px] font-medium">Inicio</span>
+          </button>
+          <button
+            onClick={() => setTab('users')}
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all ${
+              tab === 'users'
+                ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-lg'
+                : 'text-zinc-600 hover:bg-zinc-100'
+            }`}
+          >
+            <Users size={20} />
+            <span className="text-[10px] font-medium">Usuarios</span>
+          </button>
+          <button
+            onClick={() => setTab('analytics')}
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all ${
+              tab === 'analytics'
+                ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-lg'
+                : 'text-zinc-600 hover:bg-zinc-100'
+            }`}
+          >
+            <BarChart3 size={20} />
+            <span className="text-[10px] font-medium">Analytics</span>
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-zinc-600 hover:bg-zinc-100 transition-all"
+          >
+            <LayoutGrid size={20} />
+            <span className="text-[10px] font-medium">Más</span>
+          </button>
         </div>
       </div>
 
@@ -1726,7 +2059,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         </nav>
 
         {/* Content - Responsive */}
-        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto w-full overflow-x-hidden">
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-zinc-400" size={28} /></div>
           ) : (
