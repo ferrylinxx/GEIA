@@ -42,6 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const loadActiveTheme = async () => {
     try {
+      console.log('[Theme] Loading active theme from Supabase...')
       const supabase = createClient()
       const { data, error } = await supabase
         .from('app_themes')
@@ -50,9 +51,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Error loading active theme:', error)
+        console.error('[Theme] Error loading active theme:', error)
         // Set default theme if none is active
-        setCurrentTheme({
+        const defaultTheme = {
           id: 'default',
           name: 'Liquid Glass',
           slug: 'liquid-glass',
@@ -62,12 +63,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             glass: true
           },
           is_active: true
-        })
+        }
+        console.log('[Theme] Using default theme:', defaultTheme)
+        setCurrentTheme(defaultTheme)
       } else {
+        console.log('[Theme] Loaded theme from DB:', data)
         setCurrentTheme(data)
       }
     } catch (err) {
-      console.error('Failed to load theme:', err)
+      console.error('[Theme] Failed to load theme:', err)
     } finally {
       setLoading(false)
     }

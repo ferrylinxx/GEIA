@@ -21,6 +21,7 @@ export function useBrowserNotifications() {
   // Load notification settings from Supabase
   const loadSettings = useCallback(async () => {
     try {
+      console.log('[Notifications] Loading settings from Supabase...')
       const supabase = createClient()
       const { data, error } = await supabase
         .from('notification_settings')
@@ -28,12 +29,16 @@ export function useBrowserNotifications() {
         .limit(1)
         .single()
 
-      if (!error && data) {
-        setSettings(data)
+      if (error) {
+        console.error('[Notifications] Error loading settings:', error)
+      } else if (data) {
         console.log('[Notifications] Settings loaded from Supabase:', data)
+        setSettings(data)
+      } else {
+        console.log('[Notifications] No settings found, using defaults')
       }
     } catch (err) {
-      console.error('[Notifications] Error loading settings:', err)
+      console.error('[Notifications] Exception loading settings:', err)
     }
   }, [])
 
