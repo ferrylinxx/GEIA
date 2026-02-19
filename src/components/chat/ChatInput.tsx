@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FileAttachment } from '@/lib/types'
 import { useUIStore, type ToolStatus } from '@/store/ui-store'
 import { trackEvent } from '@/lib/analytics'
-import { Send, Paperclip, X, Square, Loader2, Globe, Database, HardDrive, Plus, ImagePlus, FlaskConical, Mic, MicOff, Volume2, VolumeX, Eye, FileImage, FileText, Check, BarChart3, FolderOpen, Code2, Chrome } from 'lucide-react'
+import { Send, Paperclip, X, Square, Loader2, Globe, Database, HardDrive, Plus, ImagePlus, FlaskConical, Mic, MicOff, Volume2, VolumeX, Eye, FileImage, FileText, Check, BarChart3, FolderOpen, Code2 } from 'lucide-react'
 import { useTranslation } from '@/i18n/LanguageContext'
 import { coerceMimeType, sanitizeFilename } from '@/lib/file-utils'
 import { AUTO_RAG_INGEST_ON_UPLOAD } from '@/lib/rag-ingest-config'
@@ -934,12 +934,6 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                   {researchMode === 'standard' ? '⚡ Rápido' : '🔬 Profundo'}
                 </button>
                 <button onClick={() => setDeepResearch(false)} className="ml-0.5 hover:text-amber-800"><X size={10} /></button>
-              </span>
-            )}
-            {browserAgent && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 bg-purple-50 text-purple-600 border border-purple-100 rounded-full">
-                <Chrome size={10} /> {t.chatInput.browserAgent}
-                <button onClick={() => setBrowserAgent(false)} className="ml-0.5 hover:text-purple-800"><X size={10} /></button>
               </span>
             )}
             {documentGeneration && (
