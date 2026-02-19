@@ -15,10 +15,16 @@ import {
   ArrowUp, ArrowDown, Shield, Loader2, Save, X, Check,
   ChevronRight, RefreshCw, MessageSquare, FileText, Database, GripVertical, Upload, HardDrive, Megaphone, ToggleLeft, ToggleRight, Search, Crown, MessageCircle,
   MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle,
-  Palette, Volume2, MessageSquareText
+  Palette, Volume2, MessageSquareText, BarChart3, Brain, UserPlus
 } from 'lucide-react'
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard'
+import ThemeGallery from '@/components/themes/ThemeGallery'
+import DatasetUploader from '@/components/fine-tuning/DatasetUploader'
+import JobMonitor from '@/components/fine-tuning/JobMonitor'
+import MemoryCategories from '@/components/memory/MemoryCategories'
+import ParticipantsList from '@/components/collaboration/ParticipantsList'
 
-type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents' | 'themes' | 'notification-sound'
+type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents' | 'themes' | 'notification-sound' | 'analytics' | 'theme-gallery' | 'fine-tuning' | 'memory' | 'collaboration'
 
 interface UserRow {
   id: string
@@ -1636,6 +1642,11 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     { id: 'banners', label: 'Banners', icon: <Megaphone size={16} /> },
     { id: 'themes', label: 'Temas', icon: <Palette size={16} /> },
     { id: 'notification-sound', label: 'Sonido Notificación', icon: <Volume2 size={16} /> },
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={16} /> },
+    { id: 'theme-gallery', label: 'Galería de Temas', icon: <Palette size={16} /> },
+    { id: 'fine-tuning', label: 'Fine-tuning', icon: <Bot size={16} /> },
+    { id: 'memory', label: 'Memoria', icon: <Brain size={16} /> },
+    { id: 'collaboration', label: 'Colaboración', icon: <UserPlus size={16} /> },
   ]
 
   function renderMainContent() {
@@ -1828,6 +1839,69 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
               {/* NOTIFICATION SOUND TAB */}
               {tab === 'notification-sound' && renderNotificationSoundTab()}
+
+              {/* ANALYTICS TAB */}
+              {tab === 'analytics' && (
+                <div>
+                  <AnalyticsDashboard isAdmin={true} />
+                </div>
+              )}
+
+              {/* THEME GALLERY TAB */}
+              {tab === 'theme-gallery' && (
+                <div>
+                  <ThemeGallery />
+                </div>
+              )}
+
+              {/* FINE-TUNING TAB */}
+              {tab === 'fine-tuning' && (
+                <div className="space-y-8">
+                  <DatasetUploader />
+                  <JobMonitor />
+                </div>
+              )}
+
+              {/* MEMORY TAB */}
+              {tab === 'memory' && (
+                <div>
+                  <MemoryCategories />
+                </div>
+              )}
+
+              {/* COLLABORATION TAB */}
+              {tab === 'collaboration' && (
+                <div>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+                    <h2 className="text-xl font-bold text-white mb-4">Sistema de Colaboración</h2>
+                    <p className="text-white/60 mb-6">
+                      El sistema de colaboración permite a múltiples usuarios trabajar juntos en conversaciones.
+                      Los componentes de colaboración (reacciones, typing indicators, participantes) se integran
+                      directamente en las conversaciones individuales.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
+                        <h3 className="font-semibold text-white mb-2">✨ Reacciones</h3>
+                        <p className="text-sm text-white/60">
+                          Los usuarios pueden reaccionar a mensajes con emojis
+                        </p>
+                      </div>
+                      <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+                        <h3 className="font-semibold text-white mb-2">👥 Participantes</h3>
+                        <p className="text-sm text-white/60">
+                          Invita usuarios y gestiona permisos de colaboración
+                        </p>
+                      </div>
+                      <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
+                        <h3 className="font-semibold text-white mb-2">⌨️ Typing Indicators</h3>
+                        <p className="text-sm text-white/60">
+                          Ve cuando otros usuarios están escribiendo
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </main>
