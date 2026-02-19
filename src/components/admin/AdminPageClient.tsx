@@ -13,10 +13,11 @@ import {
   ArrowLeft, Users, Bot, Plug, Trash2, Edit3, Plus, Eye, EyeOff,
   ArrowUp, ArrowDown, Shield, Loader2, Save, X, Check,
   ChevronRight, RefreshCw, MessageSquare, FileText, Database, GripVertical, Upload, HardDrive, Megaphone, ToggleLeft, ToggleRight, Search, Crown, MessageCircle,
-  MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle
+  MonitorSmartphone, MousePointerClick, ImageIcon, Sparkles, PanelsTopLeft, Zap, Clock as ClockIcon, Play, Edit2, Globe, Code2, CheckCircle2, XCircle,
+  Palette, Volume2, MessageSquareText
 } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents'
+type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents' | 'themes' | 'notification-sound' | 'notification-message'
 
 interface UserRow {
   id: string
@@ -280,6 +281,21 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [testingTika, setTestingTika] = useState(false)
   const [tikaTestResult, setTikaTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
+  // Themes State
+  const [themes, setThemes] = useState<any[]>([])
+  const [themesLoading, setThemesLoading] = useState(false)
+  const [activeTheme, setActiveTheme] = useState<string>('liquid-glass')
+
+  // Notification Settings State
+  const [notificationSettings, setNotificationSettings] = useState({
+    sound_url: '/halloween.mp3',
+    duration_seconds: 5,
+    message_template: '🤖 GEIA • {chatTitle}',
+    message_body_template: '{modelName} ha respondido:\n\n{preview}'
+  })
+  const [notificationSettingsLoading, setNotificationSettingsLoading] = useState(false)
+  const [uploadingSoundFile, setUploadingSoundFile] = useState(false)
+
   const PROVIDER_TYPES = [
     { value: 'openai', label: 'OpenAI', url: 'https://api.openai.com/v1' },
     { value: 'gemini', label: 'Google Gemini', url: 'https://generativelanguage.googleapis.com/v1beta' },
@@ -365,6 +381,40 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       }
     } catch (err) {
       console.error('Error loading executions:', err)
+    }
+  }
+
+  const loadThemes = async () => {
+    setThemesLoading(true)
+    try {
+      const res = await fetch('/api/admin/themes')
+      if (res.ok) {
+        const data = await res.json()
+        setThemes(data.themes || [])
+        const active = data.themes?.find((t: any) => t.is_active)
+        if (active) setActiveTheme(active.slug)
+      }
+    } catch (err) {
+      console.error('Error loading themes:', err)
+    } finally {
+      setThemesLoading(false)
+    }
+  }
+
+  const loadNotificationSettings = async () => {
+    setNotificationSettingsLoading(true)
+    try {
+      const res = await fetch('/api/admin/notification-settings')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.settings) {
+          setNotificationSettings(data.settings)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading notification settings:', err)
+    } finally {
+      setNotificationSettingsLoading(false)
     }
   }
 
@@ -518,6 +568,18 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       void loadAgents()
     }
   }, [tab])
+
+  useEffect(() => {
+    if (tab === 'themes' && themes.length === 0) {
+      void loadThemes()
+    }
+  }, [tab, themes.length])
+
+  useEffect(() => {
+    if ((tab === 'notification-sound' || tab === 'notification-message') && !notificationSettings.sound_url) {
+      void loadNotificationSettings()
+    }
+  }, [tab, notificationSettings.sound_url])
 
   const loadAdminFiles = async (query = filesQuery) => {
     setFilesLoading(true)
@@ -1366,6 +1428,83 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     setSyncingDrive(null)
   }
 
+  // === THEMES MANAGEMENT ===
+  const changeTheme = async (themeSlug: string) => {
+    setSaving(true)
+    try {
+      const theme = themes.find(t => t.slug === themeSlug)
+      if (!theme) return
+
+      const res = await fetch('/api/admin/themes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: theme.id, is_active: true })
+      })
+
+      if (res.ok) {
+        setActiveTheme(themeSlug)
+        setThemes(themes.map(t => ({ ...t, is_active: t.slug === themeSlug })))
+        showStatus('Tema actualizado')
+      } else {
+        showStatus('Error al cambiar tema')
+      }
+    } catch (err) {
+      showStatus('Error al cambiar tema')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // === NOTIFICATION SETTINGS MANAGEMENT ===
+  const uploadNotificationSound = async (file: File) => {
+    setUploadingSoundFile(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/admin/notification-settings/upload-sound', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setNotificationSettings({ ...notificationSettings, sound_url: data.url })
+        showStatus('Sonido subido correctamente')
+        return data.url
+      } else {
+        showStatus('Error al subir sonido')
+        return null
+      }
+    } catch (err) {
+      showStatus('Error al subir sonido')
+      return null
+    } finally {
+      setUploadingSoundFile(false)
+    }
+  }
+
+  const saveNotificationSettings = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/notification-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notificationSettings)
+      })
+
+      if (res.ok) {
+        showStatus('Configuración guardada')
+      } else {
+        showStatus('Error al guardar configuración')
+      }
+    } catch (err) {
+      showStatus('Error al guardar configuración')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const testTikaConnection = async () => {
     setTestingTika(true)
     setTikaTestResult(null)
@@ -1475,6 +1614,9 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     { id: 'document-analysis', label: 'Análisis de Documentos', icon: <Sparkles size={16} /> },
     { id: 'agents', label: 'Agentes IA', icon: <Zap size={16} /> },
     { id: 'banners', label: 'Banners', icon: <Megaphone size={16} /> },
+    { id: 'themes', label: 'Temas', icon: <Palette size={16} /> },
+    { id: 'notification-sound', label: 'Sonido Notificación', icon: <Volume2 size={16} /> },
+    { id: 'notification-message', label: 'Mensaje Notificación', icon: <MessageSquareText size={16} /> },
   ]
 
   function renderMainContent() {
@@ -1661,6 +1803,15 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
               {/* BANNERS TAB */}
               {tab === 'banners' && renderBannersTab()}
+
+              {/* THEMES TAB */}
+              {tab === 'themes' && renderThemesTab()}
+
+              {/* NOTIFICATION SOUND TAB */}
+              {tab === 'notification-sound' && renderNotificationSoundTab()}
+
+              {/* NOTIFICATION MESSAGE TAB */}
+              {tab === 'notification-message' && renderNotificationMessageTab()}
             </>
           )}
         </main>
@@ -4457,6 +4608,203 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
             })}
           </div>
         )}
+      </div>
+    )
+  }
+
+  // ======= THEMES TAB =======
+  function renderThemesTab() {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+            <Palette size={20} className="text-blue-600" />
+            Seleccionar Tema
+          </h3>
+
+          {themesLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-zinc-400" size={24} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">Tema Activo</label>
+                <select
+                  value={activeTheme}
+                  onChange={(e) => void changeTheme(e.target.value)}
+                  disabled={saving}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {themes.map((theme) => (
+                    <option key={theme.id} value={theme.slug}>
+                      {theme.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Tema actual:</strong> {themes.find(t => t.slug === activeTheme)?.name || 'Liquid Glass'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ======= NOTIFICATION SOUND TAB =======
+  function renderNotificationSoundTab() {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+            <Volume2 size={20} className="text-blue-600" />
+            Configuración de Sonido
+          </h3>
+
+          {notificationSettingsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-zinc-400" size={24} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">Archivo de Sonido (MP3)</label>
+                <input
+                  type="file"
+                  accept="audio/mp3,audio/mpeg"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) void uploadNotificationSound(file)
+                  }}
+                  disabled={uploadingSoundFile}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {uploadingSoundFile && (
+                  <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
+                    <Loader2 className="animate-spin" size={16} />
+                    Subiendo archivo...
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">URL del Sonido Actual</label>
+                <input
+                  type="text"
+                  value={notificationSettings.sound_url}
+                  readOnly
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-zinc-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">Duración (segundos)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={notificationSettings.duration_seconds}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, duration_seconds: parseInt(e.target.value) || 5 })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {notificationSettings.sound_url && (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">Vista Previa</label>
+                  <audio controls src={notificationSettings.sound_url} className="w-full" />
+                </div>
+              )}
+
+              <button
+                onClick={() => void saveNotificationSettings()}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                Guardar Configuración
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ======= NOTIFICATION MESSAGE TAB =======
+  function renderNotificationMessageTab() {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+            <MessageSquareText size={20} className="text-blue-600" />
+            Configuración de Mensaje
+          </h3>
+
+          {notificationSettingsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-zinc-400" size={24} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Plantilla del Título
+                  <span className="text-xs text-zinc-500 ml-2">(Variables: {'{chatTitle}'})</span>
+                </label>
+                <input
+                  type="text"
+                  value={notificationSettings.message_template}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, message_template: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="🤖 GEIA • {chatTitle}"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Plantilla del Cuerpo
+                  <span className="text-xs text-zinc-500 ml-2">(Variables: {'{modelName}'}, {'{preview}'})</span>
+                </label>
+                <textarea
+                  value={notificationSettings.message_body_template}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, message_body_template: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="{modelName} ha respondido:\n\n{preview}"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-800 mb-2">Vista Previa:</p>
+                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                  <p className="text-sm font-semibold text-zinc-800">
+                    {notificationSettings.message_template.replace('{chatTitle}', 'Ejemplo de Chat')}
+                  </p>
+                  <p className="text-xs text-zinc-600 mt-1 whitespace-pre-wrap">
+                    {notificationSettings.message_body_template
+                      .replace('{modelName}', 'GPT-4')
+                      .replace('{preview}', 'Este es un ejemplo de cómo se verá el mensaje de notificación...')}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => void saveNotificationSettings()}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                Guardar Configuración
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
