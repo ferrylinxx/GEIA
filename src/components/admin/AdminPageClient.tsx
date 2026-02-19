@@ -18,7 +18,7 @@ import {
   Palette, Volume2, MessageSquareText
 } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents' | 'themes' | 'notification-sound' | 'notification-message'
+type AdminTab = 'dashboard' | 'users' | 'roles' | 'tools' | 'models' | 'providers' | 'connections' | 'network-drives' | 'files' | 'banners' | 'document-analysis' | 'agents' | 'themes' | 'notification-sound'
 
 interface UserRow {
   id: string
@@ -288,14 +288,11 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   // const [themesLoading, setThemesLoading] = useState(false)
   // activeTheme ahora viene de currentTheme.slug del contexto
 
-  // Notification Settings State
+  // Notification Settings State - Ahora local con localStorage
   const [notificationSettings, setNotificationSettings] = useState({
-    sound_url: '/halloween.mp3',
-    duration_seconds: 5,
-    message_template: '🤖 GEIA • {chatTitle}',
-    message_body_template: '{modelName} ha respondido:\n\n{preview}'
+    sound_url: null as string | null,
+    duration_seconds: 5
   })
-  const [notificationSettingsLoading, setNotificationSettingsLoading] = useState(false)
   const [uploadingSoundFile, setUploadingSoundFile] = useState(false)
 
   const PROVIDER_TYPES = [
@@ -390,20 +387,26 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   // Los temas ahora son locales y están en el contexto
   // const loadThemes = async () => { ... }
 
+  // Cargar configuración de notificaciones desde Supabase
   const loadNotificationSettings = async () => {
-    setNotificationSettingsLoading(true)
     try {
-      const res = await fetch('/api/admin/notification-settings')
+      const res = await fetch('/api/public/app-settings', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+
       if (res.ok) {
         const data = await res.json()
-        if (data.settings) {
-          setNotificationSettings(data.settings)
-        }
+        const notifSettings = data.notification_sound || { sound_url: null, duration_seconds: 5 }
+
+        setNotificationSettings({
+          sound_url: notifSettings.sound_url || null,
+          duration_seconds: notifSettings.duration_seconds || 5
+        })
+        console.log('[Admin] Notification settings loaded from server:', notifSettings)
       }
     } catch (err) {
-      console.error('Error loading notification settings:', err)
-    } finally {
-      setNotificationSettingsLoading(false)
+      console.error('[Admin] Error loading notification settings:', err)
     }
   }
 
@@ -566,7 +569,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   // }, [tab, themes.length])
 
   useEffect(() => {
-    if (tab === 'notification-sound' || tab === 'notification-message') {
+    if (tab === 'notification-sound') {
       void loadNotificationSettings()
     }
   }, [tab])
@@ -1419,12 +1422,28 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
 
   // === THEMES MANAGEMENT ===
-  const changeTheme = (themeSlug: string) => {
+  const changeTheme = async (themeSlug: string) => {
     try {
-      // Usar el contexto local para cambiar el tema
-      setTheme(themeSlug as any)
-      showStatus('Tema actualizado')
+      // Guardar en Supabase para que se aplique a TODOS los usuarios
+      const res = await fetch('/api/admin/app-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'active_theme',
+          value: { slug: themeSlug, name: availableThemes[themeSlug as keyof typeof availableThemes]?.name || themeSlug }
+        })
+      })
+
+      if (res.ok) {
+        // Aplicar localmente
+        setTheme(themeSlug as any)
+        showStatus('✅ Tema actualizado para TODOS los usuarios')
+        console.log('[Admin] Theme updated globally:', themeSlug)
+      } else {
+        showStatus('Error al guardar tema')
+      }
     } catch (err) {
+      console.error('[Admin] Error changing theme:', err)
       showStatus('Error al cambiar tema')
     }
   }
@@ -1433,43 +1452,46 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const uploadNotificationSound = async (file: File) => {
     setUploadingSoundFile(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      // Convertir archivo a Data URL
+      const reader = new FileReader()
 
-      const res = await fetch('/api/admin/notification-settings/upload-sound', {
-        method: 'POST',
-        body: formData
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      // Actualizar configuración local
+      const updatedSettings = {
+        ...notificationSettings,
+        sound_url: dataUrl
+      }
+      setNotificationSettings(updatedSettings)
+
+      // Guardar en Supabase para TODOS los usuarios
+      const res = await fetch('/api/admin/app-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'notification_sound',
+          value: {
+            sound_url: dataUrl,
+            duration_seconds: updatedSettings.duration_seconds
+          }
+        })
       })
 
       if (res.ok) {
-        const data = await res.json()
-
-        // Actualizar configuración con nueva URL
-        const updatedSettings = { ...notificationSettings, sound_url: data.url }
-        setNotificationSettings(updatedSettings)
-
-        // Guardar automáticamente en la base de datos
-        const saveRes = await fetch('/api/admin/notification-settings', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedSettings)
-        })
-
-        if (saveRes.ok) {
-          showStatus('Sonido subido y guardado correctamente')
-          // Recargar configuración desde BD para confirmar
-          await loadNotificationSettings()
-        } else {
-          showStatus('Sonido subido pero error al guardar configuración')
-        }
-
-        return data.url
+        showStatus('✅ Sonido guardado para TODOS los usuarios')
+        console.log('[Admin] Notification sound updated globally')
       } else {
-        showStatus('Error al subir sonido')
-        return null
+        showStatus('Error al guardar sonido')
       }
+
+      return dataUrl
     } catch (err) {
-      showStatus('Error al subir sonido')
+      console.error('[Admin] Error uploading sound:', err)
+      showStatus('Error al procesar el archivo de sonido')
       return null
     } finally {
       setUploadingSoundFile(false)
@@ -1477,23 +1499,29 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
 
   const saveNotificationSettings = async () => {
-    setSaving(true)
     try {
-      const res = await fetch('/api/admin/notification-settings', {
+      // Guardar en Supabase para TODOS los usuarios
+      const res = await fetch('/api/admin/app-settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(notificationSettings)
+        body: JSON.stringify({
+          key: 'notification_sound',
+          value: {
+            sound_url: notificationSettings.sound_url,
+            duration_seconds: notificationSettings.duration_seconds
+          }
+        })
       })
 
       if (res.ok) {
-        showStatus('Configuración guardada')
+        showStatus('✅ Configuración guardada para TODOS los usuarios')
+        console.log('[Admin] Notification settings saved globally:', notificationSettings)
       } else {
         showStatus('Error al guardar configuración')
       }
     } catch (err) {
+      console.error('[Admin] Error saving notification settings:', err)
       showStatus('Error al guardar configuración')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -1608,7 +1636,6 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     { id: 'banners', label: 'Banners', icon: <Megaphone size={16} /> },
     { id: 'themes', label: 'Temas', icon: <Palette size={16} /> },
     { id: 'notification-sound', label: 'Sonido Notificación', icon: <Volume2 size={16} /> },
-    { id: 'notification-message', label: 'Mensaje Notificación', icon: <MessageSquareText size={16} /> },
   ]
 
   function renderMainContent() {
@@ -1801,9 +1828,6 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
               {/* NOTIFICATION SOUND TAB */}
               {tab === 'notification-sound' && renderNotificationSoundTab()}
-
-              {/* NOTIFICATION MESSAGE TAB */}
-              {tab === 'notification-message' && renderNotificationMessageTab()}
             </>
           )}
         </main>
@@ -4616,10 +4640,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-2">Tema Activo</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Tema Activo (se aplica a TODOS los usuarios)</label>
               <select
                 value={currentTheme.slug}
-                onChange={(e) => changeTheme(e.target.value)}
+                onChange={(e) => void changeTheme(e.target.value)}
                 className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 {Object.values(availableThemes).map((theme) => (
@@ -4657,151 +4681,87 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
             <Volume2 size={20} className="text-blue-600" />
-            Configuración de Sonido
+            Configuración de Sonido de Notificaciones (Global)
           </h3>
 
-          {notificationSettingsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-zinc-400" size={24} />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">Archivo de Sonido (MP3)</label>
-                <input
-                  type="file"
-                  accept="audio/mp3,audio/mpeg"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) void uploadNotificationSound(file)
-                  }}
-                  disabled={uploadingSoundFile}
-                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {uploadingSoundFile && (
-                  <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
-                    <Loader2 className="animate-spin" size={16} />
-                    Subiendo archivo...
-                  </p>
-                )}
-              </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-amber-800 font-medium">
+              🌍 Esta configuración se aplica a TODOS los usuarios de la aplicación
+            </p>
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">URL del Sonido Actual</label>
-                <input
-                  type="text"
-                  value={notificationSettings.sound_url}
-                  readOnly
-                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-zinc-50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">Duración (segundos)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={notificationSettings.duration_seconds}
-                  onChange={(e) => setNotificationSettings({ ...notificationSettings, duration_seconds: parseInt(e.target.value) || 5 })}
-                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {notificationSettings.sound_url && (
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-2">Vista Previa</label>
-                  <audio controls src={notificationSettings.sound_url} className="w-full" />
-                </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Subir Archivo MP3</label>
+              <input
+                type="file"
+                accept="audio/mp3,audio/mpeg"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) void uploadNotificationSound(file)
+                }}
+                disabled={uploadingSoundFile}
+                className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {uploadingSoundFile && (
+                <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={16} />
+                  Procesando y guardando para todos los usuarios...
+                </p>
               )}
-
-              <button
-                onClick={() => void saveNotificationSettings()}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2"
-              >
-                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                Guardar Configuración
-              </button>
+              <p className="text-xs text-zinc-500 mt-2">
+                El sonido se guardará en la base de datos y se aplicará a todos los usuarios.
+              </p>
             </div>
-          )}
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Duración de la Notificación (segundos)</label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                value={notificationSettings.duration_seconds}
+                onChange={(e) => {
+                  const newSettings = { ...notificationSettings, duration_seconds: parseInt(e.target.value) || 5 }
+                  setNotificationSettings(newSettings)
+                }}
+                className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="text-xs text-zinc-500 mt-1">
+                Tiempo que la notificación permanecerá visible (1-30 segundos)
+              </p>
+            </div>
+
+            {notificationSettings.sound_url && (
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">Vista Previa del Sonido</label>
+                <audio controls src={notificationSettings.sound_url} className="w-full" />
+                <p className="text-xs text-green-600 mt-2">
+                  ✅ Sonido configurado correctamente
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={saveNotificationSettings}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center gap-2"
+            >
+              <Save size={16} />
+              Guardar Configuración
+            </button>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-xs text-green-700">
+                ✅ La configuración se guarda en la base de datos y se aplica automáticamente a todos los usuarios cuando recarguen la página.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  // ======= NOTIFICATION MESSAGE TAB =======
-  function renderNotificationMessageTab() {
-    return (
-      <div className="space-y-6">
-        <div className="bg-white border border-zinc-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-            <MessageSquareText size={20} className="text-blue-600" />
-            Configuración de Mensaje
-          </h3>
 
-          {notificationSettingsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-zinc-400" size={24} />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">
-                  Plantilla del Título
-                  <span className="text-xs text-zinc-500 ml-2">(Variables: {'{chatTitle}'})</span>
-                </label>
-                <input
-                  type="text"
-                  value={notificationSettings.message_template}
-                  onChange={(e) => setNotificationSettings({ ...notificationSettings, message_template: e.target.value })}
-                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="🤖 GEIA • {chatTitle}"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">
-                  Plantilla del Cuerpo
-                  <span className="text-xs text-zinc-500 ml-2">(Variables: {'{modelName}'}, {'{preview}'})</span>
-                </label>
-                <textarea
-                  value={notificationSettings.message_body_template}
-                  onChange={(e) => setNotificationSettings({ ...notificationSettings, message_body_template: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="{modelName} ha respondido:\n\n{preview}"
-                />
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-blue-800 mb-2">Vista Previa:</p>
-                <div className="bg-white rounded-lg p-3 border border-blue-200">
-                  <p className="text-sm font-semibold text-zinc-800">
-                    {notificationSettings.message_template.replace('{chatTitle}', 'Ejemplo de Chat')}
-                  </p>
-                  <p className="text-xs text-zinc-600 mt-1 whitespace-pre-wrap">
-                    {notificationSettings.message_body_template
-                      .replace('{modelName}', 'GPT-4')
-                      .replace('{preview}', 'Este es un ejemplo de cómo se verá el mensaje de notificación...')}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => void saveNotificationSettings()}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2"
-              >
-                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                Guardar Configuración
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
 
   return (
     <>

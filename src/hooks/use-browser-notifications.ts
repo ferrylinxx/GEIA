@@ -1,43 +1,44 @@
 import { useEffect, useState, useCallback } from 'react'
 
 interface NotificationSettings {
-  sound_url: string
+  sound_url: string | null
   duration_seconds: number
-  message_template: string
-  message_body_template: string
+}
+
+const DEFAULT_SETTINGS: NotificationSettings = {
+  sound_url: null,
+  duration_seconds: 5
 }
 
 export function useBrowserNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default')
   const [enabled, setEnabled] = useState(false)
-  const [settings, setSettings] = useState<NotificationSettings>({
-    sound_url: '/halloween.mp3',
-    duration_seconds: 5,
-    message_template: '🤖 GEIA • {chatTitle}',
-    message_body_template: '{modelName} ha respondido:\n\n{preview}'
-  })
+  const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS)
 
-  // Load notification settings from API
+  // Load notification settings from Supabase
   const loadSettings = useCallback(async () => {
     try {
-      console.log('[Notifications] Loading settings from API...')
-      const res = await fetch('/api/public/notification-settings', {
+      console.log('[Notifications] Loading settings from server...')
+      const res = await fetch('/api/public/app-settings', {
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
+        headers: { 'Cache-Control': 'no-cache' }
       })
 
       if (!res.ok) {
-        console.error('[Notifications] API error:', res.status, res.statusText)
+        console.error('[Notifications] Failed to load from server')
         return
       }
 
       const data = await res.json()
-      console.log('[Notifications] Settings loaded from API:', data)
-      setSettings(data)
+      const notifSettings = data.notification_sound || DEFAULT_SETTINGS
+
+      console.log('[Notifications] Settings loaded from server:', notifSettings)
+      setSettings({
+        sound_url: notifSettings.sound_url || null,
+        duration_seconds: notifSettings.duration_seconds || 5
+      })
     } catch (err) {
-      console.error('[Notifications] Exception loading settings:', err)
+      console.error('[Notifications] Error loading settings:', err)
     }
   }, [])
 
@@ -161,6 +162,20 @@ export function useBrowserNotifications() {
 
       console.log('[Notifications] Notification created successfully')
 
+      // Play sound if configured
+      if (settings.sound_url) {
+        try {
+          console.log('[Notifications] Playing sound:', settings.sound_url)
+          const audio = new Audio(settings.sound_url)
+          audio.volume = 0.5
+          audio.play().catch(err => {
+            console.error('[Notifications] Error playing sound:', err)
+          })
+        } catch (err) {
+          console.error('[Notifications] Error creating audio:', err)
+        }
+      }
+
       // Auto-close after configured duration
       const duration = (settings.duration_seconds || 5) * 1000
       setTimeout(() => {
@@ -172,7 +187,7 @@ export function useBrowserNotifications() {
     } catch (error) {
       console.error('[Notifications] Error showing notification:', error)
     }
-  }, [enabled, permission])
+  }, [enabled, permission, settings])
 
   return {
     permission,

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
-// Temas disponibles localmente
+// Temas disponibles
 const AVAILABLE_THEMES = {
   'liquid-glass': {
     id: 'liquid-glass',
@@ -37,12 +37,14 @@ interface ThemeContextType {
   currentTheme: Theme
   setTheme: (slug: ThemeSlug) => void
   availableThemes: typeof AVAILABLE_THEMES
+  refreshTheme: () => Promise<void>
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   currentTheme: AVAILABLE_THEMES['liquid-glass'],
   setTheme: () => {},
   availableThemes: AVAILABLE_THEMES,
+  refreshTheme: async () => {},
 })
 
 export function useTheme() {
@@ -52,21 +54,41 @@ export function useTheme() {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<Theme>(AVAILABLE_THEMES['liquid-glass'])
 
-  // Cargar tema desde localStorage al iniciar
+  // Cargar tema desde Supabase al iniciar
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const savedTheme = localStorage.getItem('geia-theme') as ThemeSlug | null
-    if (savedTheme && AVAILABLE_THEMES[savedTheme]) {
-      setCurrentTheme(AVAILABLE_THEMES[savedTheme])
-      applyTheme(savedTheme)
-      console.log('[Theme] Loaded from localStorage:', savedTheme)
-    } else {
-      // Aplicar tema por defecto
-      applyTheme('liquid-glass')
-      console.log('[Theme] Using default theme: liquid-glass')
-    }
+    void loadThemeFromServer()
   }, [])
+
+  const loadThemeFromServer = async () => {
+    try {
+      console.log('[Theme] Loading from server...')
+      const res = await fetch('/api/public/app-settings', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+
+      if (!res.ok) {
+        console.error('[Theme] Failed to load from server, using default')
+        applyTheme('liquid-glass')
+        return
+      }
+
+      const data = await res.json()
+      const themeSlug = data.active_theme?.slug || 'liquid-glass'
+
+      if (AVAILABLE_THEMES[themeSlug as ThemeSlug]) {
+        setCurrentTheme(AVAILABLE_THEMES[themeSlug as ThemeSlug])
+        applyTheme(themeSlug as ThemeSlug)
+        console.log('[Theme] Loaded from server:', themeSlug)
+      } else {
+        console.error('[Theme] Invalid theme from server:', themeSlug)
+        applyTheme('liquid-glass')
+      }
+    } catch (err) {
+      console.error('[Theme] Error loading from server:', err)
+      applyTheme('liquid-glass')
+    }
+  }
 
   const applyTheme = (slug: ThemeSlug) => {
     if (typeof window === 'undefined') return
@@ -85,14 +107,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const theme = AVAILABLE_THEMES[slug]
     setCurrentTheme(theme)
     applyTheme(slug)
-
-    // Guardar en localStorage
-    localStorage.setItem('geia-theme', slug)
     console.log('[Theme] Theme changed to:', slug)
   }
 
+  const refreshTheme = async () => {
+    await loadThemeFromServer()
+  }
+
   return (
-    <ThemeContext.Provider value={{ currentTheme, setTheme, availableThemes: AVAILABLE_THEMES }}>
+    <ThemeContext.Provider value={{ currentTheme, setTheme, availableThemes: AVAILABLE_THEMES, refreshTheme }}>
       {children}
     </ThemeContext.Provider>
   )
