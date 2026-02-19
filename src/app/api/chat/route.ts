@@ -4368,11 +4368,37 @@ REGLAS OBLIGATORIAS:
         if (assistantMessageId && totalTokens > 0) {
           // Model pricing (USD per 1K tokens)
           const modelPricing: Record<string, { prompt: number; completion: number }> = {
+            // GPT-5 series (estimated pricing based on capabilities)
+            'gpt-5.3-codex': { prompt: 0.01, completion: 0.03 },
+            'gpt-5.2': { prompt: 0.008, completion: 0.024 },
+            'gpt-5.2-codex': { prompt: 0.009, completion: 0.027 },
+            'gpt-5.1': { prompt: 0.007, completion: 0.021 },
+            'gpt-5': { prompt: 0.006, completion: 0.018 },
+            'gpt-5-mini': { prompt: 0.0003, completion: 0.0012 },
+            'gpt-5-turbo': { prompt: 0.005, completion: 0.015 },
+            // GPT-4.5 series
+            'gpt-4.5-preview': { prompt: 0.004, completion: 0.012 },
+            'gpt-4.5': { prompt: 0.004, completion: 0.012 },
+            // GPT-4.1 series
+            'gpt-4.1': { prompt: 0.0035, completion: 0.0105 },
+            'gpt-4.1-mini': { prompt: 0.0002, completion: 0.0008 },
+            'gpt-4.1-nano': { prompt: 0.0001, completion: 0.0004 },
+            // o-series (reasoning models)
+            'o1': { prompt: 0.015, completion: 0.06 },
+            'o1-mini': { prompt: 0.003, completion: 0.012 },
+            'o1-preview': { prompt: 0.015, completion: 0.06 },
+            'o3': { prompt: 0.02, completion: 0.08 },
+            'o3-mini': { prompt: 0.004, completion: 0.016 },
+            'o3-pro': { prompt: 0.025, completion: 0.1 },
+            'o4-mini': { prompt: 0.005, completion: 0.02 },
+            // GPT-4 series
             'gpt-4o': { prompt: 0.0025, completion: 0.01 },
             'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
             'gpt-4-turbo': { prompt: 0.01, completion: 0.03 },
+            'gpt-4-turbo-preview': { prompt: 0.01, completion: 0.03 },
             'gpt-4': { prompt: 0.03, completion: 0.06 },
             'gpt-3.5-turbo': { prompt: 0.0005, completion: 0.0015 },
+            // Claude series
             'claude-3-5-sonnet-20241022': { prompt: 0.003, completion: 0.015 },
             'claude-3-5-haiku-20241022': { prompt: 0.001, completion: 0.005 },
             'claude-3-opus-20240229': { prompt: 0.015, completion: 0.075 },
