@@ -335,21 +335,41 @@
 /* ═══ EPIC MENUS & DROPDOWNS ═══ */
 [data-theme="halloween"] [role="menu"],
 [data-theme="halloween"] .dropdown,
-[data-theme="halloween"] .menu {
+[data-theme="halloween"] .menu,
+[data-theme="halloween"] [class*="menu"],
+[data-theme="halloween"] [class*="dropdown"],
+[data-theme="halloween"] [class*="popover"],
+[data-theme="halloween"] [class*="context"] {
   background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
   border: 2px solid #3A1B57 !important;
   box-shadow:
     0 8px 40px rgba(138, 0, 255, 0.5),
-    0 0 60px rgba(255, 106, 0, 0.3) !important;
+    0 0 60px rgba(255, 106, 0, 0.3),
+    inset 0 0 40px rgba(138, 0, 255, 0.1) !important;
+  color: #F7F2FF !important;
+}
+
+[data-theme="halloween"] [role="menuitem"],
+[data-theme="halloween"] .menu-item,
+[data-theme="halloween"] [class*="menu-item"],
+[data-theme="halloween"] [class*="dropdown-item"] {
+  background: transparent !important;
+  color: #F7F2FF !important;
+  border-bottom: 1px solid rgba(58, 27, 87, 0.3) !important;
+  transition: all 0.3s ease !important;
 }
 
 [data-theme="halloween"] [role="menuitem"]:hover,
-[data-theme="halloween"] .menu-item:hover {
+[data-theme="halloween"] .menu-item:hover,
+[data-theme="halloween"] [class*="menu-item"]:hover,
+[data-theme="halloween"] [class*="dropdown-item"]:hover {
   background: linear-gradient(90deg, rgba(138, 0, 255, 0.3), rgba(255, 106, 0, 0.2)) !important;
   color: #FF6A00 !important;
-  box-shadow: 0 0 20px rgba(255, 106, 0, 0.4) !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.4),
+    inset 0 0 20px rgba(138, 0, 255, 0.2) !important;
   transform: translateX(5px) !important;
-  transition: all 0.3s ease !important;
+  border-left: 3px solid #FF6A00 !important;
 }
 
 /* ═══ EPIC ANIMATIONS ═══ */
@@ -408,5 +428,573 @@
 [data-theme="halloween"] ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #A020F0 0%, #FF8800 100%);
   box-shadow: 0 0 20px rgba(255, 106, 0, 0.7);
+}
+
+/* ═══ MODALES Y DIÁLOGOS ═══ */
+[data-theme="halloween"] [role="dialog"],
+[data-theme="halloween"] .modal,
+[data-theme="halloween"] .dialog,
+[data-theme="halloween"] [class*="modal"],
+[data-theme="halloween"] [class*="dialog"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 3px solid #8B00FF !important;
+  box-shadow:
+    0 20px 80px rgba(0, 0, 0, 0.9),
+    0 0 100px rgba(138, 0, 255, 0.6),
+    0 0 60px rgba(255, 106, 0, 0.4),
+    inset 0 0 80px rgba(138, 0, 255, 0.1) !important;
+  color: #F7F2FF !important;
+}
+
+/* Overlay oscuro para modales */
+[data-theme="halloween"] [class*="overlay"],
+[data-theme="halloween"] [class*="backdrop"] {
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ═══ LISTAS Y ITEMS ═══ */
+[data-theme="halloween"] ul,
+[data-theme="halloween"] ol,
+[data-theme="halloween"] li {
+  color: #F7F2FF !important;
+}
+
+[data-theme="halloween"] li:hover {
+  background: rgba(138, 0, 255, 0.1) !important;
+  border-left: 3px solid #FF6A00 !important;
+  padding-left: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+/* ═══ TOOLTIPS ═══ */
+[data-theme="halloween"] [role="tooltip"],
+[data-theme="halloween"] .tooltip,
+[data-theme="halloween"] [class*="tooltip"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 2px solid #FF6A00 !important;
+  color: #F7F2FF !important;
+  box-shadow:
+    0 4px 20px rgba(255, 106, 0, 0.5),
+    0 0 40px rgba(138, 0, 255, 0.3) !important;
+}
+
+/* ═══ BADGES Y TAGS ═══ */
+[data-theme="halloween"] .badge,
+[data-theme="halloween"] .tag,
+[data-theme="halloween"] [class*="badge"],
+[data-theme="halloween"] [class*="tag"] {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #FF6A00 !important;
+  box-shadow: 0 0 20px rgba(255, 106, 0, 0.5) !important;
+  font-weight: 600 !important;
+}
+
+/* ═══ TABS ═══ */
+[data-theme="halloween"] [role="tab"],
+[data-theme="halloween"] .tab,
+[data-theme="halloween"] [class*="tab"] {
+  background: transparent !important;
+  color: #C7AFDD !important;
+  border-bottom: 2px solid transparent !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] [role="tab"][aria-selected="true"],
+[data-theme="halloween"] .tab.active,
+[data-theme="halloween"] [class*="tab"].active {
+  background: linear-gradient(180deg, rgba(138, 0, 255, 0.2) 0%, transparent 100%) !important;
+  color: #FF6A00 !important;
+  border-bottom: 3px solid #FF6A00 !important;
+  box-shadow: 0 0 20px rgba(255, 106, 0, 0.4) !important;
+}
+
+[data-theme="halloween"] [role="tab"]:hover,
+[data-theme="halloween"] .tab:hover {
+  color: #FF6A00 !important;
+  border-bottom: 2px solid #8B00FF !important;
+}
+
+/* ═══ DIVIDERS ═══ */
+[data-theme="halloween"] hr,
+[data-theme="halloween"] .divider,
+[data-theme="halloween"] [class*="divider"] {
+  border-color: #3A1B57 !important;
+  background: linear-gradient(90deg, transparent, #8B00FF, transparent) !important;
+  height: 2px !important;
+  box-shadow: 0 0 10px rgba(138, 0, 255, 0.5) !important;
+}
+
+/* ═══ SLIDERS Y RANGE INPUTS ═══ */
+[data-theme="halloween"] input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, #3A1B57 0%, #1B0B2D 100%) !important;
+  height: 8px !important;
+  border-radius: 4px !important;
+  border: 1px solid #8B00FF !important;
+  box-shadow:
+    0 0 20px rgba(138, 0, 255, 0.3),
+    inset 0 2px 5px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="halloween"] input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border: 2px solid #FF6A00 !important;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.7),
+    0 0 40px rgba(255, 45, 85, 0.5) !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2) !important;
+  box-shadow:
+    0 0 30px rgba(255, 106, 0, 1),
+    0 0 60px rgba(255, 45, 85, 0.7) !important;
+}
+
+[data-theme="halloween"] input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border: 2px solid #FF6A00 !important;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.7),
+    0 0 40px rgba(255, 45, 85, 0.5) !important;
+}
+
+/* ═══ CHECKBOXES ═══ */
+[data-theme="halloween"] input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #24103C 0%, #1B0B2D 100%) !important;
+  border: 2px solid #8B00FF !important;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease !important;
+  box-shadow:
+    0 0 10px rgba(138, 0, 255, 0.3),
+    inset 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="halloween"] input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border-color: #FF6A00 !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.7),
+    0 0 40px rgba(255, 45, 85, 0.5) !important;
+}
+
+[data-theme="halloween"] input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══ RADIO BUTTONS ═══ */
+[data-theme="halloween"] input[type="radio"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #24103C 0%, #1B0B2D 100%) !important;
+  border: 2px solid #8B00FF !important;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease !important;
+  box-shadow:
+    0 0 10px rgba(138, 0, 255, 0.3),
+    inset 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="halloween"] input[type="radio"]:checked {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border-color: #FF6A00 !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.7),
+    0 0 40px rgba(255, 45, 85, 0.5) !important;
+}
+
+[data-theme="halloween"] input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* ═══ SWITCHES / TOGGLES ═══ */
+[data-theme="halloween"] input[type="checkbox"][role="switch"],
+[data-theme="halloween"] .switch,
+[data-theme="halloween"] [class*="switch"] {
+  width: 44px !important;
+  height: 24px !important;
+  background: linear-gradient(135deg, #24103C 0%, #1B0B2D 100%) !important;
+  border: 2px solid #8B00FF !important;
+  border-radius: 12px !important;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] input[type="checkbox"][role="switch"]:checked,
+[data-theme="halloween"] .switch.active {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border-color: #FF6A00 !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.7),
+    0 0 40px rgba(255, 45, 85, 0.5) !important;
+}
+
+/* ═══ ARREGLAR ELEMENTOS BLANCOS/GRISES ═══ */
+[data-theme="halloween"] div[class*="bg-"],
+[data-theme="halloween"] section[class*="bg-"],
+[data-theme="halloween"] article[class*="bg-"] {
+  background: transparent !important;
+}
+
+/* Forzar fondo oscuro en contenedores principales */
+[data-theme="halloween"] div:not([class*="gradient"]):not([class*="transparent"]) {
+  background-color: transparent !important;
+}
+
+/* ═══ POPOVER Y CONTEXT MENUS ESPECÍFICOS ═══ */
+[data-theme="halloween"] [data-radix-popper-content-wrapper],
+[data-theme="halloween"] [data-radix-portal],
+[data-theme="halloween"] [data-state="open"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 2px solid #3A1B57 !important;
+  box-shadow:
+    0 8px 40px rgba(138, 0, 255, 0.5),
+    0 0 60px rgba(255, 106, 0, 0.3) !important;
+  color: #F7F2FF !important;
+}
+
+/* ═══ ARREGLAR MENÚS ESPECÍFICOS (como en la imagen) ═══ */
+[data-theme="halloween"] [role="menu"] > div,
+[data-theme="halloween"] [role="menu"] > button,
+[data-theme="halloween"] .menu > div,
+[data-theme="halloween"] .menu > button {
+  background: transparent !important;
+  color: #F7F2FF !important;
+}
+
+/* Items de menú con iconos */
+[data-theme="halloween"] [role="menuitem"] svg,
+[data-theme="halloween"] .menu-item svg {
+  color: #FF6A00 !important;
+  filter: drop-shadow(0 0 5px rgba(255, 106, 0, 0.5));
+}
+
+/* ═══ ARREGLAR SIDEBAR ITEMS ═══ */
+[data-theme="halloween"] aside button,
+[data-theme="halloween"] aside a,
+[data-theme="halloween"] nav button,
+[data-theme="halloween"] nav a,
+[data-theme="halloween"] [class*="sidebar"] button,
+[data-theme="halloween"] [class*="sidebar"] a {
+  background: transparent !important;
+  color: #F7F2FF !important;
+  border: none !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] aside button:hover,
+[data-theme="halloween"] aside a:hover,
+[data-theme="halloween"] nav button:hover,
+[data-theme="halloween"] nav a:hover,
+[data-theme="halloween"] [class*="sidebar"] button:hover,
+[data-theme="halloween"] [class*="sidebar"] a:hover {
+  background: linear-gradient(90deg, rgba(138, 0, 255, 0.3), rgba(255, 106, 0, 0.2)) !important;
+  color: #FF6A00 !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.4),
+    inset 0 0 20px rgba(138, 0, 255, 0.2) !important;
+  border-left: 3px solid #FF6A00 !important;
+  transform: translateX(5px) !important;
+}
+
+/* Sidebar items activos */
+[data-theme="halloween"] aside button.active,
+[data-theme="halloween"] aside a.active,
+[data-theme="halloween"] nav button.active,
+[data-theme="halloween"] nav a.active,
+[data-theme="halloween"] [class*="sidebar"] button.active,
+[data-theme="halloween"] [class*="sidebar"] a.active,
+[data-theme="halloween"] aside button[aria-current="page"],
+[data-theme="halloween"] aside a[aria-current="page"] {
+  background: linear-gradient(90deg, rgba(255, 106, 0, 0.3), rgba(138, 0, 255, 0.2)) !important;
+  color: #FF6A00 !important;
+  border-left: 4px solid #FF6A00 !important;
+  box-shadow:
+    0 0 30px rgba(255, 106, 0, 0.5),
+    inset 0 0 30px rgba(138, 0, 255, 0.2) !important;
+  font-weight: 600 !important;
+}
+
+/* ═══ ARREGLAR ICONOS ═══ */
+[data-theme="halloween"] svg {
+  color: inherit !important;
+  filter: drop-shadow(0 0 3px rgba(138, 0, 255, 0.3));
+}
+
+[data-theme="halloween"] button svg,
+[data-theme="halloween"] a svg {
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] button:hover svg,
+[data-theme="halloween"] a:hover svg {
+  filter: drop-shadow(0 0 10px rgba(255, 106, 0, 0.7));
+  transform: scale(1.1);
+}
+
+/* ═══ ARREGLAR AVATARES Y IMÁGENES ═══ */
+[data-theme="halloween"] img,
+[data-theme="halloween"] [class*="avatar"] {
+  border: 2px solid #8B00FF !important;
+  box-shadow:
+    0 0 20px rgba(138, 0, 255, 0.5),
+    0 0 40px rgba(255, 106, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] img:hover,
+[data-theme="halloween"] [class*="avatar"]:hover {
+  border-color: #FF6A00 !important;
+  box-shadow:
+    0 0 30px rgba(255, 106, 0, 0.7),
+    0 0 60px rgba(138, 0, 255, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+/* ═══ ARREGLAR CÓDIGO Y PRE ═══ */
+[data-theme="halloween"] code,
+[data-theme="halloween"] pre {
+  background: linear-gradient(135deg, #24103C 0%, #1B0B2D 100%) !important;
+  border: 1px solid #3A1B57 !important;
+  color: #FF6A00 !important;
+  box-shadow:
+    0 4px 20px rgba(138, 0, 255, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ═══ ARREGLAR LINKS ═══ */
+[data-theme="halloween"] a {
+  color: #FF6A00 !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+  text-shadow: 0 0 10px rgba(255, 106, 0, 0.3);
+}
+
+[data-theme="halloween"] a:hover {
+  color: #FF8800 !important;
+  text-shadow: 0 0 20px rgba(255, 106, 0, 0.7);
+  text-decoration: underline !important;
+}
+
+/* ═══ CHAT MESSAGES ═══ */
+[data-theme="halloween"] [class*="message"],
+[data-theme="halloween"] [class*="chat"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 1px solid #3A1B57 !important;
+  color: #F7F2FF !important;
+  box-shadow:
+    0 4px 20px rgba(138, 0, 255, 0.3),
+    inset 0 0 30px rgba(138, 0, 255, 0.05) !important;
+}
+
+/* User messages */
+[data-theme="halloween"] [class*="message-user"],
+[data-theme="halloween"] [class*="user-message"] {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border: 1px solid #FF6A00 !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 20px rgba(255, 106, 0, 0.5),
+    0 0 40px rgba(255, 45, 85, 0.3) !important;
+}
+
+/* AI messages */
+[data-theme="halloween"] [class*="message-ai"],
+[data-theme="halloween"] [class*="ai-message"],
+[data-theme="halloween"] [class*="assistant-message"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 1px solid #8B00FF !important;
+  color: #F7F2FF !important;
+  box-shadow:
+    0 4px 20px rgba(138, 0, 255, 0.4),
+    inset 0 0 30px rgba(138, 0, 255, 0.1) !important;
+}
+
+/* ═══ LOADING STATES ═══ */
+[data-theme="halloween"] [class*="loading"],
+[data-theme="halloween"] [class*="spinner"],
+[data-theme="halloween"] [class*="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    #1B0B2D 0%,
+    #3A1B57 50%,
+    #1B0B2D 100%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2s infinite !important;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ═══ ALERTS Y NOTIFICACIONES ═══ */
+[data-theme="halloween"] [role="alert"],
+[data-theme="halloween"] .alert,
+[data-theme="halloween"] [class*="alert"],
+[data-theme="halloween"] [class*="notification"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 2px solid #FF6A00 !important;
+  color: #F7F2FF !important;
+  box-shadow:
+    0 8px 30px rgba(255, 106, 0, 0.5),
+    0 0 60px rgba(138, 0, 255, 0.3),
+    inset 0 0 40px rgba(255, 106, 0, 0.1) !important;
+}
+
+/* Alert types */
+[data-theme="halloween"] .alert-success,
+[data-theme="halloween"] [class*="alert-success"] {
+  border-color: #00FF88 !important;
+  box-shadow:
+    0 8px 30px rgba(0, 255, 136, 0.4),
+    0 0 60px rgba(0, 255, 136, 0.2) !important;
+}
+
+[data-theme="halloween"] .alert-error,
+[data-theme="halloween"] [class*="alert-error"],
+[data-theme="halloween"] [class*="alert-danger"] {
+  border-color: #FF2D55 !important;
+  box-shadow:
+    0 8px 30px rgba(255, 45, 85, 0.5),
+    0 0 60px rgba(255, 45, 85, 0.3) !important;
+}
+
+[data-theme="halloween"] .alert-warning,
+[data-theme="halloween"] [class*="alert-warning"] {
+  border-color: #FFD700 !important;
+  box-shadow:
+    0 8px 30px rgba(255, 215, 0, 0.4),
+    0 0 60px rgba(255, 215, 0, 0.2) !important;
+}
+
+/* ═══ PROGRESS BARS ═══ */
+[data-theme="halloween"] progress,
+[data-theme="halloween"] [role="progressbar"],
+[data-theme="halloween"] [class*="progress"] {
+  background: linear-gradient(90deg, #24103C 0%, #1B0B2D 100%) !important;
+  border: 1px solid #3A1B57 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 0 20px rgba(138, 0, 255, 0.3),
+    inset 0 2px 5px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="halloween"] progress::-webkit-progress-bar {
+  background: linear-gradient(90deg, #24103C 0%, #1B0B2D 100%) !important;
+}
+
+[data-theme="halloween"] progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #8B00FF 0%, #FF6A00 50%, #FF2D55 100%) !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.7),
+    0 0 40px rgba(138, 0, 255, 0.5) !important;
+  animation: progressGlow 2s ease-in-out infinite !important;
+}
+
+@keyframes progressGlow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+}
+
+/* ═══ TABLES ═══ */
+[data-theme="halloween"] table {
+  background: transparent !important;
+  border-collapse: collapse !important;
+  color: #F7F2FF !important;
+}
+
+[data-theme="halloween"] th {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  color: #FF6A00 !important;
+  border: 1px solid #3A1B57 !important;
+  padding: 12px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 10px rgba(255, 106, 0, 0.5) !important;
+}
+
+[data-theme="halloween"] td {
+  background: rgba(27, 11, 45, 0.5) !important;
+  border: 1px solid #3A1B57 !important;
+  padding: 10px !important;
+  color: #F7F2FF !important;
+}
+
+[data-theme="halloween"] tr:hover td {
+  background: rgba(138, 0, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(138, 0, 255, 0.3) !important;
+}
+
+/* ═══ FORMS Y FIELDSETS ═══ */
+[data-theme="halloween"] fieldset {
+  border: 2px solid #3A1B57 !important;
+  background: linear-gradient(135deg, rgba(27, 11, 45, 0.5) 0%, rgba(22, 8, 38, 0.5) 100%) !important;
+  box-shadow:
+    0 4px 20px rgba(138, 0, 255, 0.2),
+    inset 0 0 30px rgba(138, 0, 255, 0.05) !important;
+}
+
+[data-theme="halloween"] legend {
+  color: #FF6A00 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 10px rgba(255, 106, 0, 0.5) !important;
+  padding: 0 10px !important;
+}
+
+[data-theme="halloween"] label {
+  color: #F7F2FF !important;
+  font-weight: 500 !important;
 }
 
