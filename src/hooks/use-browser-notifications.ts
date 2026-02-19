@@ -165,12 +165,22 @@ export function useBrowserNotifications() {
       // Play sound if configured
       if (settings.sound_url && settings.sound_url !== null && settings.sound_url.trim() !== '') {
         try {
-          console.log('[Notifications] Playing sound:', settings.sound_url)
+          console.log('[Notifications] Playing sound:', settings.sound_url, 'Duration:', settings.duration_seconds, 'seconds')
           const audio = new Audio(settings.sound_url)
           audio.volume = 0.5
+
+          // Play the audio
           audio.play().catch(err => {
             console.error('[Notifications] Error playing sound:', err)
           })
+
+          // Stop the audio after duration_seconds
+          const durationMs = (settings.duration_seconds || 5) * 1000
+          setTimeout(() => {
+            audio.pause()
+            audio.currentTime = 0
+            console.log('[Notifications] Sound stopped after', settings.duration_seconds, 'seconds')
+          }, durationMs)
         } catch (err) {
           console.error('[Notifications] Error creating audio:', err)
         }
