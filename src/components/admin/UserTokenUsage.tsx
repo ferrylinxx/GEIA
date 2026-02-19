@@ -54,13 +54,12 @@ export default function UserTokenUsage({ userId }: UserTokenUsageProps) {
         setStats(statsData as TokenStats)
       }
 
-      // Cargar actividad reciente (últimos 10 usos)
+      // Cargar TODA la actividad (sin límite)
       const { data: recentData } = await supabase
         .from('token_usage')
         .select('id, model, total_tokens, cost_usd, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(10)
       
       if (recentData) {
         setRecentActivity(recentData)
