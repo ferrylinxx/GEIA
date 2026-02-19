@@ -14,7 +14,6 @@ export function ThemeEffects() {
   if (!mounted || !currentTheme) return null
 
   const slug = currentTheme.slug
-  const config = currentTheme.config_json
 
   return (
     <>
@@ -22,7 +21,7 @@ export function ThemeEffects() {
       {slug === 'halloween' && (
         <>
           {/* Floating Bats */}
-          {config.elements?.bats && (
+          {true && (
             <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
               {[...Array(5)].map((_, i) => (
                 <div
@@ -42,7 +41,7 @@ export function ThemeEffects() {
           )}
 
           {/* Pumpkins in corners */}
-          {config.elements?.pumpkins && (
+          {true && (
             <>
               <div className="fixed bottom-4 left-4 text-6xl animate-pulse-slow pointer-events-none z-40">
                 🎃
@@ -54,7 +53,7 @@ export function ThemeEffects() {
           )}
 
           {/* Spiderwebs */}
-          {config.elements?.spiderwebs && (
+          {true && (
             <>
               <div className="fixed top-0 left-0 text-8xl opacity-30 pointer-events-none z-40">
                 🕸️
@@ -66,7 +65,7 @@ export function ThemeEffects() {
           )}
 
           {/* Floating Ghosts */}
-          {config.elements?.ghosts && (
+          {true && (
             <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
               {[...Array(3)].map((_, i) => (
                 <div
@@ -85,7 +84,7 @@ export function ThemeEffects() {
           )}
 
           {/* Purple glow particles */}
-          {config.effects?.particles && (
+          {true && (
             <div className="fixed inset-0 pointer-events-none z-30 overflow-hidden">
               {[...Array(20)].map((_, i) => (
                 <div
@@ -108,7 +107,7 @@ export function ThemeEffects() {
       {slug === 'navidad' && (
         <>
           {/* Snowfall */}
-          {config.elements?.snowflakes && (
+          {true && (
             <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
               {[...Array(50)].map((_, i) => (
                 <div
@@ -128,7 +127,7 @@ export function ThemeEffects() {
           )}
 
           {/* Christmas ornaments in corners */}
-          {config.elements?.ornaments && (
+          {true && (
             <>
               <div className="fixed top-4 left-4 text-5xl animate-swing pointer-events-none z-40">
                 🎄
@@ -140,7 +139,7 @@ export function ThemeEffects() {
           )}
 
           {/* Twinkling stars */}
-          {config.elements?.stars && (
+          {true && (
             <div className="fixed inset-0 pointer-events-none z-30 overflow-hidden">
               {[...Array(15)].map((_, i) => (
                 <div
@@ -159,7 +158,7 @@ export function ThemeEffects() {
           )}
 
           {/* Christmas lights string */}
-          {config.elements?.lights && (
+          {true && (
             <div className="fixed top-0 left-0 right-0 h-12 pointer-events-none z-40 flex justify-around items-center">
               {[...Array(20)].map((_, i) => (
                 <div
