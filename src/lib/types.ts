@@ -188,6 +188,15 @@ export interface ModelOption {
 }
 
 export const MODELS: ModelOption[] = [
+  // GPT-5 series
+  { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex', provider: 'openai', maxTokens: 200000 },
+  { id: 'gpt-5.2', name: 'GPT-5.2', provider: 'openai', maxTokens: 200000 },
+  { id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex', provider: 'openai', maxTokens: 200000 },
+  { id: 'gpt-5.1', name: 'GPT-5.1', provider: 'openai', maxTokens: 200000 },
+  { id: 'gpt-5', name: 'GPT-5', provider: 'openai', maxTokens: 200000 },
+  { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', maxTokens: 128000 },
+  { id: 'gpt-5-turbo', name: 'GPT-5 Turbo', provider: 'openai', maxTokens: 128000 },
+  // GPT-4 series
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', maxTokens: 128000 },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', maxTokens: 128000 },
   { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openai', maxTokens: 128000 },
