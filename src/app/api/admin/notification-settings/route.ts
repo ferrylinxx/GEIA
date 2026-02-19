@@ -23,7 +23,7 @@ export async function GET() {
     if (!settings) {
       return NextResponse.json({
         settings: {
-          sound_url: '/halloween.mp3',
+          sound_url: null,
           duration_seconds: 5,
           message_template: '🤖 GEIA • {chatTitle}',
           message_body_template: '{modelName} ha respondido:\n\n{preview}'
