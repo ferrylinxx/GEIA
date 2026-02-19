@@ -1,0 +1,172 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAVIDAD THEME - Complete Festive Christmas Theme
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="navidad"] {
+  /* CSS Variables */
+  --theme-primary: #c41e3a;
+  --theme-secondary: #165b33;
+  --theme-background: #f8f9fa;
+  --theme-accent: #ffd700;
+  --background: #f8f9fa;
+  --foreground: #18181b;
+  --sidebar-bg: #e8f5e9;
+  --border: #c8e6c9;
+  --accent: #c41e3a;
+  --muted: #5a7a5f;
+  --card: #ffffff;
+  --input: #f0f7f1;
+}
+
+/* ═══ BODY & MAIN LAYOUT ═══ */
+[data-theme="navidad"] body {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e9 50%, #f8f9fa 100%) !important;
+  background-attachment: fixed !important;
+  color: #18181b !important;
+}
+
+[data-theme="navidad"] main {
+  background: transparent !important;
+}
+
+/* ═══ SIDEBAR ═══ */
+[data-theme="navidad"] .liquid-glass-sidebar,
+[data-theme="navidad"] aside,
+[data-theme="navidad"] nav {
+  background: linear-gradient(180deg, rgba(232, 245, 233, 0.95) 0%, rgba(200, 230, 201, 0.9) 100%) !important;
+  border-right: 1px solid rgba(22, 91, 51, 0.2) !important;
+  box-shadow: 0 0 30px rgba(196, 30, 58, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ═══ CARDS & PANELS ═══ */
+[data-theme="navidad"] .bg-zinc-900,
+[data-theme="navidad"] .bg-zinc-800,
+[data-theme="navidad"] .bg-gray-900,
+[data-theme="navidad"] .bg-gray-800 {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(22, 91, 51, 0.2) !important;
+  color: #18181b !important;
+}
+
+[data-theme="navidad"] .bg-white,
+[data-theme="navidad"] [class*="bg-white"],
+[data-theme="navidad"] .card,
+[data-theme="navidad"] .panel {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(22, 91, 51, 0.2) !important;
+  color: #18181b !important;
+  box-shadow: 0 2px 10px rgba(196, 30, 58, 0.05) !important;
+}
+
+[data-theme="navidad"] .bg-zinc-50,
+[data-theme="navidad"] .bg-zinc-100,
+[data-theme="navidad"] .bg-gray-50,
+[data-theme="navidad"] .bg-gray-100 {
+  background: rgba(240, 247, 241, 0.8) !important;
+  color: #18181b !important;
+}
+
+/* ═══ INPUTS & FORMS ═══ */
+[data-theme="navidad"] input,
+[data-theme="navidad"] textarea,
+[data-theme="navidad"] select {
+  background: rgba(240, 247, 241, 0.9) !important;
+  border-color: rgba(22, 91, 51, 0.3) !important;
+  color: #18181b !important;
+}
+
+[data-theme="navidad"] input::placeholder,
+[data-theme="navidad"] textarea::placeholder {
+  color: rgba(24, 24, 27, 0.5) !important;
+}
+
+[data-theme="navidad"] input:focus,
+[data-theme="navidad"] textarea:focus,
+[data-theme="navidad"] select:focus {
+  border-color: #c41e3a !important;
+  box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.2) !important;
+  outline: none !important;
+}
+
+/* ═══ BUTTONS ═══ */
+[data-theme="navidad"] button:not(.ghost):not(.outline) {
+  background: linear-gradient(135deg, #c41e3a 0%, #165b33 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(196, 30, 58, 0.3) !important;
+  border: none !important;
+}
+
+[data-theme="navidad"] button:not(.ghost):not(.outline):hover {
+  box-shadow: 0 6px 20px rgba(196, 30, 58, 0.5) !important;
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+[data-theme="navidad"] button.ghost,
+[data-theme="navidad"] button.outline {
+  background: transparent !important;
+  border: 1px solid rgba(22, 91, 51, 0.3) !important;
+  color: #c41e3a !important;
+}
+
+/* ═══ TEXT COLORS ═══ */
+[data-theme="navidad"] .text-white,
+[data-theme="navidad"] .text-zinc-50,
+[data-theme="navidad"] .text-gray-50 {
+  color: #18181b !important;
+}
+
+[data-theme="navidad"] .text-zinc-900,
+[data-theme="navidad"] .text-zinc-800,
+[data-theme="navidad"] .text-zinc-700,
+[data-theme="navidad"] .text-gray-900,
+[data-theme="navidad"] .text-gray-800,
+[data-theme="navidad"] .text-gray-700 {
+  color: #18181b !important;
+}
+
+[data-theme="navidad"] .text-zinc-500,
+[data-theme="navidad"] .text-zinc-400,
+[data-theme="navidad"] .text-gray-500,
+[data-theme="navidad"] .text-gray-400 {
+  color: #5a7a5f !important;
+}
+
+/* ═══ BORDERS ═══ */
+[data-theme="navidad"] .border-zinc-700,
+[data-theme="navidad"] .border-zinc-800,
+[data-theme="navidad"] .border-gray-700,
+[data-theme="navidad"] .border-gray-800 {
+  border-color: rgba(22, 91, 51, 0.2) !important;
+}
+
+[data-theme="navidad"] .border-zinc-200,
+[data-theme="navidad"] .border-zinc-300,
+[data-theme="navidad"] .border-gray-200,
+[data-theme="navidad"] .border-gray-300 {
+  border-color: rgba(22, 91, 51, 0.2) !important;
+}
+
+/* ═══ HEADER ═══ */
+[data-theme="navidad"] header {
+  background: rgba(232, 245, 233, 0.95) !important;
+  border-bottom: 1px solid rgba(22, 91, 51, 0.2) !important;
+  box-shadow: 0 4px 20px rgba(196, 30, 58, 0.1) !important;
+}
+
+/* ═══ MENUS & DROPDOWNS ═══ */
+[data-theme="navidad"] [role="menu"],
+[data-theme="navidad"] .dropdown,
+[data-theme="navidad"] .menu {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(22, 91, 51, 0.2) !important;
+  box-shadow: 0 8px 30px rgba(196, 30, 58, 0.15) !important;
+}
+
+[data-theme="navidad"] [role="menuitem"]:hover,
+[data-theme="navidad"] .menu-item:hover {
+  background: rgba(196, 30, 58, 0.1) !important;
+  color: #c41e3a !important;
+}
+

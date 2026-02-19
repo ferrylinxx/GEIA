@@ -4,7 +4,11 @@ import Script from "next/script";
 import { Suspense } from "react";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
 import { ActivityProvider } from "@/contexts/ActivityContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeEffects } from "@/components/theme/ThemeEffects";
 import "./globals.css";
+import "@/styles/themes/halloween.css";
+import "@/styles/themes/navidad.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,12 +60,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-900`}
       >
-        <ActivityProvider>
-          <Suspense fallback={null}>
-            <AnalyticsTracker />
-          </Suspense>
-          {children}
-        </ActivityProvider>
+        <ThemeProvider>
+          <ThemeEffects />
+          <ActivityProvider>
+            <Suspense fallback={null}>
+              <AnalyticsTracker />
+            </Suspense>
+            {children}
+          </ActivityProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

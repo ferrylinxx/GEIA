@@ -76,7 +76,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     addMessage, loadMessages, loadConversations, conversations,
   } = useChatStore()
   const { setToolStatus, openFilePreview, soundEnabled, addToast } = useUIStore()
-  const { showNotification } = useBrowserNotifications()
+  const { showNotification, settings: notificationSettings } = useBrowserNotifications()
 
   const revokeAttachmentPreviews = useCallback((items: PendingAttachment[]) => {
     for (const item of items) {
@@ -95,23 +95,26 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     try {
       console.log('[Sound] Attempting to play notification sound...')
 
-      // Usar archivo MP3 personalizado
-      const audio = new Audio('/halloween.mp3')
+      // Usar archivo MP3 configurado desde Supabase
+      const soundUrl = notificationSettings.sound_url || '/halloween.mp3'
+      const duration = (notificationSettings.duration_seconds || 5) * 1000
+
+      const audio = new Audio(soundUrl)
       audio.volume = 0.5 // Volumen al 50%
 
       audio.play()
         .then(() => {
-          console.log('[Sound] MP3 notification playing...')
+          console.log(`[Sound] Playing notification sound from ${soundUrl}...`)
 
-          // Detener el audio después de 5 segundos
+          // Detener el audio después de la duración configurada
           setTimeout(() => {
             audio.pause()
             audio.currentTime = 0
-            console.log('[Sound] MP3 stopped after 5 seconds')
-          }, 5000) // 5000ms = 5 segundos
+            console.log(`[Sound] Sound stopped after ${duration}ms`)
+          }, duration)
         })
         .catch((error) => {
-          console.error('[Sound] Error playing MP3:', error)
+          console.error('[Sound] Error playing sound:', error)
           // Fallback al sonido sintetizado si falla el MP3
           playFallbackSound()
         })
@@ -171,7 +174,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
     } catch (error) {
       console.error('[Sound] Fallback sound error:', error)
     }
-  }, [])
+  }, [soundEnabled, notificationSettings])
 
   useEffect(() => {
     attachmentsRef.current = attachments
@@ -711,10 +714,18 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
                          selectedModel.includes('claude') ? 'Claude' :
                          selectedModel.includes('gemini') ? 'Gemini' : 'IA'
 
-        console.log('[Notification] Showing notification:', { chatTitle, modelName, previewLength: previewText.length })
+        // Apply notification templates from settings
+        const notificationTitle = notificationSettings.message_template
+          .replace('{chatTitle}', chatTitle)
 
-        showNotification(`🤖 GEIA • ${chatTitle}`, {
-          body: `${modelName} ha respondido:\n\n${previewText}`,
+        const notificationBody = notificationSettings.message_body_template
+          .replace('{modelName}', modelName)
+          .replace('{preview}', previewText)
+
+        console.log('[Notification] Showing notification:', { chatTitle, modelName, previewLength: previewText.length, title: notificationTitle, body: notificationBody })
+
+        showNotification(notificationTitle, {
+          body: notificationBody,
           tag: 'geia-response-complete',
           icon: '/logo.png',
           badge: '/logo.png',
@@ -729,7 +740,7 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
       setStreamingContent('')
       setStreamAbortController(null)
     }
-  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId, conversations, streamingContent, streamingConversationId])
+  }, [input, attachments, activeConversationId, createConversation, isStreaming, uploading, isListening, setIsStreaming, setStreamingConversationId, setStreamingContent, selectedModel, selectedAgent, ragMode, citeMode, webSearch, dbQuery, networkDriveRag, imageGeneration, deepResearch, documentGeneration, spreadsheetAnalysis, addMessage, loadMessages, loadConversations, setToolStatus, revokeAttachmentPreviews, playNotificationSound, showNotification, router, setStreamAbortController, researchMode, projectContextId, conversations, streamingContent, streamingConversationId, notificationSettings])
 
   const handleStop = () => {
     abortStreaming()

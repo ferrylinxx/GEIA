@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AIProvider, ModelConfig, DbConnection, DbSchemaTable, NetworkDrive, Banner } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import { useTheme } from '@/contexts/ThemeContext'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import RolesManagement from './RolesManagement'
@@ -128,6 +129,7 @@ function createEmptyBannerForm(): BannerFormState {
 
 export default function AdminPageClient({ stats, currentUserId }: Props) {
   const router = useRouter()
+  const { refreshTheme } = useTheme()
   const [tab, setTab] = useState<AdminTab>('dashboard')
   const [users, setUsers] = useState<UserRow[]>([])
   const [providers, setProviders] = useState<AIProvider[]>([])
@@ -1444,6 +1446,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
       if (res.ok) {
         setActiveTheme(themeSlug)
         setThemes(themes.map(t => ({ ...t, is_active: t.slug === themeSlug })))
+        await refreshTheme() // Refresh theme in context
         showStatus('Tema actualizado')
       } else {
         showStatus('Error al cambiar tema')
@@ -1469,8 +1472,26 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
       if (res.ok) {
         const data = await res.json()
-        setNotificationSettings({ ...notificationSettings, sound_url: data.url })
-        showStatus('Sonido subido correctamente')
+
+        // Actualizar configuración con nueva URL
+        const updatedSettings = { ...notificationSettings, sound_url: data.url }
+        setNotificationSettings(updatedSettings)
+
+        // Guardar automáticamente en la base de datos
+        const saveRes = await fetch('/api/admin/notification-settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedSettings)
+        })
+
+        if (saveRes.ok) {
+          showStatus('Sonido subido y guardado correctamente')
+          // Recargar configuración desde BD para confirmar
+          await loadNotificationSettings()
+        } else {
+          showStatus('Sonido subido pero error al guardar configuración')
+        }
+
         return data.url
       } else {
         showStatus('Error al subir sonido')

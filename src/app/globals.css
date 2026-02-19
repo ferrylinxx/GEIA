@@ -8,6 +8,150 @@
   --border: #e4e4e7;
   --muted: #71717a;
   --accent: #3b82f6;
+
+  /* Theme variables - can be overridden by ThemeProvider */
+  --theme-primary: #3b82f6;
+  --theme-secondary: #6366f1;
+  --theme-background: #ffffff;
+  --theme-accent: #3b82f6;
+}
+
+/* Halloween Theme */
+[data-theme="halloween"] {
+  --theme-primary: #ff6b00;
+  --theme-secondary: #8b00ff;
+  --theme-background: #1a0a2e;
+  --theme-accent: #ff4500;
+  --background: #1a0a2e;
+  --foreground: #ffffff;
+  --sidebar-bg: #2a1a3e;
+  --border: #4a2a5e;
+  --accent: #ff6b00;
+  --muted: #9d7bb8;
+}
+
+[data-theme="halloween"] body {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%);
+  color: #ffffff;
+}
+
+[data-theme="halloween"] .liquid-glass-sidebar {
+  background: linear-gradient(180deg, rgba(42, 26, 62, 0.95) 0%, rgba(45, 27, 78, 0.9) 100%);
+  border-right: 1px solid rgba(138, 0, 255, 0.3);
+  box-shadow: 0 0 30px rgba(138, 0, 255, 0.2);
+}
+
+[data-theme="halloween"] input,
+[data-theme="halloween"] textarea,
+[data-theme="halloween"] select {
+  background: rgba(58, 37, 85, 0.8);
+  border-color: rgba(138, 0, 255, 0.4);
+  color: #ffffff;
+}
+
+[data-theme="halloween"] input:focus,
+[data-theme="halloween"] textarea:focus,
+[data-theme="halloween"] select:focus {
+  border-color: #ff6b00;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2);
+}
+
+[data-theme="halloween"] button {
+  background: linear-gradient(135deg, #ff6b00 0%, #ff4500 100%);
+  box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+}
+
+[data-theme="halloween"] button:hover {
+  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme="halloween"] .bg-white {
+  background: rgba(45, 27, 78, 0.6) !important;
+}
+
+[data-theme="halloween"] .text-zinc-900,
+[data-theme="halloween"] .text-zinc-800,
+[data-theme="halloween"] .text-zinc-700 {
+  color: #ffffff !important;
+}
+
+[data-theme="halloween"] .border-zinc-200,
+[data-theme="halloween"] .border-zinc-300 {
+  border-color: rgba(138, 0, 255, 0.3) !important;
+}
+
+/* Navidad Theme */
+[data-theme="navidad"] {
+  --theme-primary: #c41e3a;
+  --theme-secondary: #165b33;
+  --theme-background: #f8f9fa;
+  --theme-accent: #ffd700;
+  --background: #f8f9fa;
+  --foreground: #18181b;
+  --sidebar-bg: #e8f5e9;
+  --border: #c8e6c9;
+  --accent: #c41e3a;
+  --muted: #5a7a5f;
+}
+
+[data-theme="navidad"] body {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e9 50%, #f8f9fa 100%);
+  color: #18181b;
+}
+
+[data-theme="navidad"] .liquid-glass-sidebar {
+  background: linear-gradient(180deg, rgba(232, 245, 233, 0.95) 0%, rgba(200, 230, 201, 0.9) 100%);
+  border-right: 1px solid rgba(22, 91, 51, 0.2);
+  box-shadow: 0 0 30px rgba(196, 30, 58, 0.1);
+}
+
+[data-theme="navidad"] input,
+[data-theme="navidad"] textarea,
+[data-theme="navidad"] select {
+  background: rgba(240, 247, 241, 0.9);
+  border-color: rgba(22, 91, 51, 0.3);
+  color: #18181b;
+}
+
+[data-theme="navidad"] input:focus,
+[data-theme="navidad"] textarea:focus,
+[data-theme="navidad"] select:focus {
+  border-color: #c41e3a;
+  box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.2);
+}
+
+[data-theme="navidad"] button {
+  background: linear-gradient(135deg, #c41e3a 0%, #165b33 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(196, 30, 58, 0.3);
+}
+
+[data-theme="navidad"] button:hover {
+  box-shadow: 0 6px 20px rgba(196, 30, 58, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme="navidad"] .bg-zinc-900,
+[data-theme="navidad"] .bg-zinc-800 {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="navidad"] .text-white {
+  color: #18181b !important;
+}
+
+[data-theme="navidad"] .border-zinc-700,
+[data-theme="navidad"] .border-zinc-800 {
+  border-color: rgba(22, 91, 51, 0.2) !important;
+}
+
+/* Liquid Glass Theme (default) */
+[data-theme="liquid-glass"] {
+  --theme-primary: #3b82f6;
+  --theme-secondary: #6366f1;
+  --theme-background: #ffffff;
+  --theme-accent: #3b82f6;
 }
 
 @theme inline {
@@ -868,6 +1012,64 @@ pre code {
 .checkmark-animated {
   animation: checkmark-in 0.25s ease-out;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME ANIMATIONS - Halloween & Christmas
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Halloween Animations */
+@keyframes float-bat {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(20px, -30px) rotate(5deg); }
+  50% { transform: translate(-15px, -60px) rotate(-5deg); }
+  75% { transform: translate(25px, -40px) rotate(3deg); }
+}
+
+@keyframes float-ghost {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
+  50% { transform: translateY(-30px) scale(1.1); opacity: 1; }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes particle {
+  0% { transform: translateY(0) scale(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-100vh) scale(1); opacity: 0; }
+}
+
+/* Christmas Animations */
+@keyframes snowfall {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+  100% { transform: translateY(110vh) translateX(100px) rotate(360deg); }
+}
+
+@keyframes swing {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes blink {
+  0%, 49%, 100% { opacity: 1; }
+  50%, 99% { opacity: 0.3; }
+}
+
+.animate-float-bat { animation: float-bat 10s ease-in-out infinite; }
+.animate-float-ghost { animation: float-ghost 6s ease-in-out infinite; }
+.animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+.animate-particle { animation: particle 5s linear infinite; }
+.animate-snowfall { animation: snowfall 10s linear infinite; }
+.animate-swing { animation: swing 3s ease-in-out infinite; }
+.animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
+.animate-blink { animation: blink 1.5s ease-in-out infinite; }
 
 /* Mobile: reduce heavy blur/refraction for better FPS and battery. */
 @media (max-width: 767px) {

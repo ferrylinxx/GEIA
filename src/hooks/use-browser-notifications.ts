@@ -1,19 +1,55 @@
 import { useEffect, useState, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+interface NotificationSettings {
+  sound_url: string
+  duration_seconds: number
+  message_template: string
+  message_body_template: string
+}
 
 export function useBrowserNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default')
   const [enabled, setEnabled] = useState(false)
+  const [settings, setSettings] = useState<NotificationSettings>({
+    sound_url: '/halloween.mp3',
+    duration_seconds: 5,
+    message_template: '🤖 GEIA • {chatTitle}',
+    message_body_template: '{modelName} ha respondido:\n\n{preview}'
+  })
+
+  // Load notification settings from Supabase
+  const loadSettings = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .limit(1)
+        .single()
+
+      if (!error && data) {
+        setSettings(data)
+        console.log('[Notifications] Settings loaded from Supabase:', data)
+      }
+    } catch (err) {
+      console.error('[Notifications] Error loading settings:', err)
+    }
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return
-    
+
     // Get current permission
     setPermission(Notification.permission)
-    
+
     // Get user preference from localStorage
     const savedPreference = localStorage.getItem('geia-browser-notifications')
     setEnabled(savedPreference === 'true')
-  }, [])
+
+    // Load settings from Supabase
+    void loadSettings()
+  }, [loadSettings])
 
   const requestPermission = useCallback(async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -121,11 +157,12 @@ export function useBrowserNotifications() {
 
       console.log('[Notifications] Notification created successfully')
 
-      // Auto-close after 8 seconds
+      // Auto-close after configured duration
+      const duration = (settings.duration_seconds || 5) * 1000
       setTimeout(() => {
         notification.close()
         console.log('[Notifications] Notification closed')
-      }, 8000)
+      }, duration)
 
       return notification
     } catch (error) {
@@ -136,9 +173,11 @@ export function useBrowserNotifications() {
   return {
     permission,
     enabled,
+    settings,
     requestPermission,
     toggleNotifications,
     showNotification,
+    loadSettings,
     isSupported: typeof window !== 'undefined' && 'Notification' in window,
   }
 }

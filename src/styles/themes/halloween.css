@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════
+   HALLOWEEN THEME - Complete Dark Spooky Theme
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="halloween"] {
+  /* CSS Variables */
+  --theme-primary: #ff6b00;
+  --theme-secondary: #8b00ff;
+  --theme-background: #1a0a2e;
+  --theme-accent: #ff4500;
+  --background: #1a0a2e;
+  --foreground: #ffffff;
+  --sidebar-bg: #2a1a3e;
+  --border: #4a2a5e;
+  --accent: #ff6b00;
+  --muted: #9d7bb8;
+  --card: #2d1b4e;
+  --input: #3a2555;
+}
+
+/* ═══ BODY & MAIN LAYOUT ═══ */
+[data-theme="halloween"] body {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%) !important;
+  background-attachment: fixed !important;
+  color: #ffffff !important;
+}
+
+[data-theme="halloween"] main {
+  background: transparent !important;
+}
+
+/* ═══ SIDEBAR ═══ */
+[data-theme="halloween"] .liquid-glass-sidebar,
+[data-theme="halloween"] aside,
+[data-theme="halloween"] nav {
+  background: linear-gradient(180deg, rgba(42, 26, 62, 0.95) 0%, rgba(45, 27, 78, 0.9) 100%) !important;
+  border-right: 1px solid rgba(138, 0, 255, 0.3) !important;
+  box-shadow: 0 0 30px rgba(138, 0, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ═══ CARDS & PANELS ═══ */
+[data-theme="halloween"] .bg-white,
+[data-theme="halloween"] [class*="bg-white"],
+[data-theme="halloween"] .card,
+[data-theme="halloween"] .panel {
+  background: rgba(45, 27, 78, 0.8) !important;
+  border-color: rgba(138, 0, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="halloween"] .bg-zinc-50,
+[data-theme="halloween"] .bg-zinc-100,
+[data-theme="halloween"] .bg-gray-50,
+[data-theme="halloween"] .bg-gray-100 {
+  background: rgba(58, 37, 85, 0.6) !important;
+  color: #ffffff !important;
+}
+
+/* ═══ INPUTS & FORMS ═══ */
+[data-theme="halloween"] input,
+[data-theme="halloween"] textarea,
+[data-theme="halloween"] select {
+  background: rgba(58, 37, 85, 0.8) !important;
+  border-color: rgba(138, 0, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="halloween"] input::placeholder,
+[data-theme="halloween"] textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="halloween"] input:focus,
+[data-theme="halloween"] textarea:focus,
+[data-theme="halloween"] select:focus {
+  border-color: #ff6b00 !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2) !important;
+  outline: none !important;
+}
+
+/* ═══ BUTTONS ═══ */
+[data-theme="halloween"] button:not(.ghost):not(.outline) {
+  background: linear-gradient(135deg, #ff6b00 0%, #ff4500 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3) !important;
+  border: none !important;
+}
+
+[data-theme="halloween"] button:not(.ghost):not(.outline):hover {
+  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.5) !important;
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+[data-theme="halloween"] button.ghost,
+[data-theme="halloween"] button.outline {
+  background: transparent !important;
+  border: 1px solid rgba(138, 0, 255, 0.4) !important;
+  color: #ff6b00 !important;
+}
+
+/* ═══ TEXT COLORS ═══ */
+[data-theme="halloween"] .text-zinc-900,
+[data-theme="halloween"] .text-zinc-800,
+[data-theme="halloween"] .text-zinc-700,
+[data-theme="halloween"] .text-zinc-600,
+[data-theme="halloween"] .text-gray-900,
+[data-theme="halloween"] .text-gray-800,
+[data-theme="halloween"] .text-gray-700 {
+  color: #ffffff !important;
+}
+
+[data-theme="halloween"] .text-zinc-500,
+[data-theme="halloween"] .text-zinc-400,
+[data-theme="halloween"] .text-gray-500,
+[data-theme="halloween"] .text-gray-400 {
+  color: #9d7bb8 !important;
+}
+
+/* ═══ BORDERS ═══ */
+[data-theme="halloween"] .border-zinc-200,
+[data-theme="halloween"] .border-zinc-300,
+[data-theme="halloween"] .border-gray-200,
+[data-theme="halloween"] .border-gray-300 {
+  border-color: rgba(138, 0, 255, 0.3) !important;
+}
+
+/* ═══ HEADER ═══ */
+[data-theme="halloween"] header {
+  background: rgba(42, 26, 62, 0.9) !important;
+  border-bottom: 1px solid rgba(138, 0, 255, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(138, 0, 255, 0.2) !important;
+}
+
+/* ═══ MENUS & DROPDOWNS ═══ */
+[data-theme="halloween"] [role="menu"],
+[data-theme="halloween"] .dropdown,
+[data-theme="halloween"] .menu {
+  background: rgba(45, 27, 78, 0.95) !important;
+  border: 1px solid rgba(138, 0, 255, 0.4) !important;
+  box-shadow: 0 8px 30px rgba(138, 0, 255, 0.3) !important;
+}
+
+[data-theme="halloween"] [role="menuitem"]:hover,
+[data-theme="halloween"] .menu-item:hover {
+  background: rgba(138, 0, 255, 0.2) !important;
+  color: #ff6b00 !important;
+}
+
