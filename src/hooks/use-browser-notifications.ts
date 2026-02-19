@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface NotificationSettings {
   sound_url: string
@@ -18,25 +17,25 @@ export function useBrowserNotifications() {
     message_body_template: '{modelName} ha respondido:\n\n{preview}'
   })
 
-  // Load notification settings from Supabase
+  // Load notification settings from API
   const loadSettings = useCallback(async () => {
     try {
-      console.log('[Notifications] Loading settings from Supabase...')
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('notification_settings')
-        .select('*')
-        .limit(1)
-        .single()
+      console.log('[Notifications] Loading settings from API...')
+      const res = await fetch('/api/public/notification-settings', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
 
-      if (error) {
-        console.error('[Notifications] Error loading settings:', error)
-      } else if (data) {
-        console.log('[Notifications] Settings loaded from Supabase:', data)
-        setSettings(data)
-      } else {
-        console.log('[Notifications] No settings found, using defaults')
+      if (!res.ok) {
+        console.error('[Notifications] API error:', res.status, res.statusText)
+        return
       }
+
+      const data = await res.json()
+      console.log('[Notifications] Settings loaded from API:', data)
+      setSettings(data)
     } catch (err) {
       console.error('[Notifications] Exception loading settings:', err)
     }

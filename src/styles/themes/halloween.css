@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    HALLOWEEN THEME - Complete Dark Spooky Theme
+   OVERRIDES ALL LIQUID GLASS STYLES
    ═══════════════════════════════════════════════════════════════ */
 
 [data-theme="halloween"] {
@@ -18,6 +19,21 @@
   --input: #3a2555;
 }
 
+/* ═══ DISABLE LIQUID GLASS EFFECTS ═══ */
+[data-theme="halloween"] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="halloween"] .liquid-glass-sidebar,
+[data-theme="halloween"] .liquid-glass-panel,
+[data-theme="halloween"] .liquid-glass-card,
+[data-theme="halloween"] [class*="liquid-glass"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: transparent !important;
+}
+
 /* ═══ BODY & MAIN LAYOUT ═══ */
 [data-theme="halloween"] body {
   background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%) !important;
@@ -32,29 +48,39 @@
 /* ═══ SIDEBAR ═══ */
 [data-theme="halloween"] .liquid-glass-sidebar,
 [data-theme="halloween"] aside,
-[data-theme="halloween"] nav {
-  background: linear-gradient(180deg, rgba(42, 26, 62, 0.95) 0%, rgba(45, 27, 78, 0.9) 100%) !important;
-  border-right: 1px solid rgba(138, 0, 255, 0.3) !important;
-  box-shadow: 0 0 30px rgba(138, 0, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
+[data-theme="halloween"] nav,
+[data-theme="halloween"] [class*="sidebar"] {
+  background: linear-gradient(180deg, #2a1a3e 0%, #1a0a2e 100%) !important;
+  border-right: 2px solid #8b00ff !important;
+  box-shadow: 0 0 40px rgba(138, 0, 255, 0.4), inset 0 0 60px rgba(138, 0, 255, 0.1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* ═══ CARDS & PANELS ═══ */
 [data-theme="halloween"] .bg-white,
 [data-theme="halloween"] [class*="bg-white"],
 [data-theme="halloween"] .card,
-[data-theme="halloween"] .panel {
-  background: rgba(45, 27, 78, 0.8) !important;
-  border-color: rgba(138, 0, 255, 0.3) !important;
+[data-theme="halloween"] .panel,
+[data-theme="halloween"] [class*="panel"],
+[data-theme="halloween"] [class*="card"] {
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0a2e 100%) !important;
+  border: 1px solid #8b00ff !important;
+  box-shadow: 0 4px 20px rgba(138, 0, 255, 0.3), inset 0 0 40px rgba(138, 0, 255, 0.05) !important;
   color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 [data-theme="halloween"] .bg-zinc-50,
 [data-theme="halloween"] .bg-zinc-100,
 [data-theme="halloween"] .bg-gray-50,
-[data-theme="halloween"] .bg-gray-100 {
-  background: rgba(58, 37, 85, 0.6) !important;
+[data-theme="halloween"] .bg-gray-100,
+[data-theme="halloween"] .bg-zinc-900,
+[data-theme="halloween"] .bg-zinc-800 {
+  background: #3a2555 !important;
   color: #ffffff !important;
+  border-color: #8b00ff !important;
 }
 
 /* ═══ INPUTS & FORMS ═══ */
