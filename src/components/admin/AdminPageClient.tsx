@@ -1726,7 +1726,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         </div>
 
         {/* Content - Responsive */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-zinc-400" size={28} /></div>
           ) : (
@@ -1909,14 +1909,14 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
       {chatViewerOpen && (
         <div
-          className="fixed inset-0 z-40 bg-zinc-900/35 backdrop-blur-[2px] flex items-center justify-center p-4"
+          className="fixed inset-0 z-40 bg-zinc-900/35 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4"
           onClick={closeChatViewer}
         >
           <div
-            className="liquid-glass-dropdown w-full max-w-6xl h-[82vh] rounded-2xl overflow-hidden flex flex-col"
+            className="liquid-glass-dropdown w-full max-w-6xl h-[95vh] sm:h-[90vh] md:h-[82vh] rounded-xl sm:rounded-2xl overflow-hidden flex flex-col"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="px-4 py-3 border-b border-white/45 bg-white/20 flex items-center justify-between gap-3">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-white/45 bg-white/20 flex items-center justify-between gap-2 sm:gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-zinc-800 truncate">
                   Chats de {chatViewerUser?.name || chatViewerUser?.email || 'Usuario'}
@@ -1930,8 +1930,8 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
               </button>
             </div>
 
-            <div className="flex-1 min-h-0 grid grid-cols-[320px_minmax(0,1fr)]">
-              <aside className="border-r border-white/45 bg-white/20 overflow-y-auto p-3 space-y-2">
+            <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)]">
+              <aside className="hidden md:block border-r border-white/45 bg-white/20 overflow-y-auto p-2 sm:p-3 space-y-2">
                 {loadingUserConversations ? (
                   <div className="h-full flex items-center justify-center text-zinc-400">
                     <Loader2 size={18} className="animate-spin" />
@@ -2067,7 +2067,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         <div className="liquid-glass-card rounded-xl overflow-hidden shadow-lg">
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[900px]">
               <thead>
                 <tr className="bg-gradient-to-r from-zinc-50 to-zinc-100/50 border-b border-zinc-200">
                   <th className="text-left px-4 py-3 text-xs text-zinc-600 font-semibold">Usuario</th>
@@ -3261,7 +3261,7 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
         <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[1000px]">
               <thead>
                 <tr className="bg-zinc-50 border-b border-zinc-200">
                   <th className="text-left px-4 py-2.5 text-xs text-zinc-500 font-medium w-10">
@@ -3366,8 +3366,8 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
         </div>
 
         {file && (
-          <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-2xl border border-white/60 bg-white/75 backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+          <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-4xl max-h-[95vh] sm:max-h-[92vh] overflow-hidden rounded-xl sm:rounded-2xl border border-white/60 bg-white/75 backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
               <div className="px-4 py-3 border-b border-white/55 bg-white/30 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-zinc-800 truncate">{file.filename}</p>
@@ -4851,8 +4851,8 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
 
       {/* Create User Modal */}
       {showCreateUserModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[95vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-zinc-800 mb-4">Crear Nuevo Usuario</h3>
 
             {!createdUserCredentials ? (
