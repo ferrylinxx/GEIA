@@ -683,24 +683,34 @@ export default function ChatInput({ onSuggestionSelect }: ChatInputProps = {}) {
         const currentConversation = conversations.find(c => c.id === convId)
         const chatTitle = currentConversation?.title || 'Nuevo chat'
 
-        // Crear preview del mensaje (primeras 120 caracteres del contenido streaming)
+        // Crear preview del mensaje (primeras 150 caracteres del contenido streaming)
         const cleanContent = streamingContent
           .replace(/\*\*/g, '') // Eliminar markdown bold
           .replace(/\*/g, '') // Eliminar markdown italic
           .replace(/`/g, '') // Eliminar markdown code
           .replace(/#{1,6}\s/g, '') // Eliminar markdown headers
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Eliminar markdown links pero mantener texto
           .replace(/\n+/g, ' ') // Reemplazar saltos de línea con espacios
+          .replace(/\s+/g, ' ') // Normalizar espacios múltiples
           .trim()
 
-        const messagePreview = cleanContent.slice(0, 120)
+        const messagePreview = cleanContent.slice(0, 150)
         const previewText = messagePreview.length > 0
-          ? messagePreview + (cleanContent.length > 120 ? '...' : '')
-          : 'Respuesta completada'
+          ? messagePreview + (cleanContent.length > 150 ? '...' : '')
+          : '¡Tu respuesta está lista!'
 
-        showNotification(`💬 ${chatTitle}`, {
-          body: `✨ ${previewText}`,
+        // Determinar el modelo usado para personalizar el mensaje
+        const modelName = selectedModel.includes('gpt-4') ? 'GPT-4' :
+                         selectedModel.includes('claude') ? 'Claude' :
+                         selectedModel.includes('gemini') ? 'Gemini' : 'IA'
+
+        showNotification(`🤖 GEIA • ${chatTitle}`, {
+          body: `${modelName} ha respondido:\n\n${previewText}`,
           tag: 'geia-response-complete',
           icon: '/logo.png',
+          badge: '/logo.png',
+          requireInteraction: false,
+          silent: true, // El sonido ya lo manejamos con playNotificationSound
         })
       }
       // Reload silently before clearing streamed content to avoid visual flicker.
