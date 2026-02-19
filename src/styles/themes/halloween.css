@@ -998,3 +998,229 @@
   font-weight: 500 !important;
 }
 
+/* ═══ ARREGLAR MENÚS ESPECÍFICOS (EINES, etc.) ═══ */
+[data-theme="halloween"] [class*="Sheet"],
+[data-theme="halloween"] [class*="sheet"],
+[data-theme="halloween"] [data-state="open"][role="dialog"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 3px solid #8B00FF !important;
+  box-shadow:
+    0 20px 80px rgba(0, 0, 0, 0.9),
+    0 0 100px rgba(138, 0, 255, 0.6),
+    0 0 60px rgba(255, 106, 0, 0.4) !important;
+}
+
+/* Header de menús laterales */
+[data-theme="halloween"] [class*="Sheet"] > div:first-child,
+[data-theme="halloween"] [class*="sheet"] > div:first-child {
+  background: transparent !important;
+  border-bottom: 2px solid #3A1B57 !important;
+  color: #FF6A00 !important;
+  padding: 16px !important;
+}
+
+/* Contenido de menús laterales */
+[data-theme="halloween"] [class*="Sheet"] > div,
+[data-theme="halloween"] [class*="sheet"] > div {
+  background: transparent !important;
+  color: #F7F2FF !important;
+}
+
+/* Botones dentro de menús laterales */
+[data-theme="halloween"] [class*="Sheet"] button,
+[data-theme="halloween"] [class*="sheet"] button,
+[data-theme="halloween"] [role="dialog"] button {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border: 2px solid #FF6A00 !important;
+  color: #ffffff !important;
+  padding: 12px 16px !important;
+  margin: 4px 0 !important;
+  width: 100% !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 4px 20px rgba(255, 106, 0, 0.5),
+    0 0 30px rgba(255, 45, 85, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="halloween"] [class*="Sheet"] button:hover,
+[data-theme="halloween"] [class*="sheet"] button:hover,
+[data-theme="halloween"] [role="dialog"] button:hover {
+  background: linear-gradient(135deg, #FF8800 0%, #FF4466 100%) !important;
+  box-shadow:
+    0 6px 30px rgba(255, 106, 0, 0.7),
+    0 0 50px rgba(255, 45, 85, 0.5) !important;
+  transform: translateX(5px) scale(1.02) !important;
+}
+
+/* Iconos dentro de botones de menú */
+[data-theme="halloween"] [class*="Sheet"] button svg,
+[data-theme="halloween"] [class*="sheet"] button svg,
+[data-theme="halloween"] [role="dialog"] button svg {
+  color: #ffffff !important;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)) !important;
+}
+
+/* ═══ ARREGLAR SIDEBAR CHATS (botones cortados) ═══ */
+[data-theme="halloween"] aside [class*="conversation"],
+[data-theme="halloween"] aside [class*="chat"],
+[data-theme="halloween"] nav [class*="conversation"],
+[data-theme="halloween"] nav [class*="chat"],
+[data-theme="halloween"] [class*="sidebar"] [class*="conversation"],
+[data-theme="halloween"] [class*="sidebar"] [class*="chat"] {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  border: 2px solid #FF6A00 !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  padding: 12px !important;
+  margin: 6px 8px !important;
+  width: calc(100% - 16px) !important;
+  min-height: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  box-shadow:
+    0 4px 20px rgba(255, 106, 0, 0.5),
+    0 0 30px rgba(255, 45, 85, 0.3) !important;
+  transition: all 0.3s ease !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+}
+
+[data-theme="halloween"] aside [class*="conversation"]:hover,
+[data-theme="halloween"] aside [class*="chat"]:hover,
+[data-theme="halloween"] nav [class*="conversation"]:hover,
+[data-theme="halloween"] nav [class*="chat"]:hover {
+  background: linear-gradient(135deg, #FF8800 0%, #FF4466 100%) !important;
+  box-shadow:
+    0 6px 30px rgba(255, 106, 0, 0.7),
+    0 0 50px rgba(255, 45, 85, 0.5) !important;
+  transform: translateX(5px) scale(1.02) !important;
+}
+
+/* Texto dentro de botones de chat */
+[data-theme="halloween"] aside [class*="conversation"] span,
+[data-theme="halloween"] aside [class*="chat"] span,
+[data-theme="halloween"] aside [class*="conversation"] p,
+[data-theme="halloween"] aside [class*="chat"] p {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  text-overflow: clip !important;
+  max-width: 100% !important;
+}
+
+/* ═══ ARREGLAR SECCIONES DE SIDEBAR (AVUI, ÚLTIMS 7 DIES, etc.) ═══ */
+[data-theme="halloween"] aside [class*="section"],
+[data-theme="halloween"] aside h2,
+[data-theme="halloween"] aside h3,
+[data-theme="halloween"] nav [class*="section"],
+[data-theme="halloween"] nav h2,
+[data-theme="halloween"] nav h3,
+[data-theme="halloween"] [class*="sidebar"] [class*="section"],
+[data-theme="halloween"] [class*="sidebar"] h2,
+[data-theme="halloween"] [class*="sidebar"] h3 {
+  background: linear-gradient(135deg, #FF6A00 0%, #FF2D55 100%) !important;
+  color: #ffffff !important;
+  padding: 10px 12px !important;
+  margin: 8px 8px !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  box-shadow:
+    0 4px 20px rgba(255, 106, 0, 0.5),
+    0 0 30px rgba(255, 45, 85, 0.3) !important;
+  width: calc(100% - 16px) !important;
+}
+
+/* ═══ ARREGLAR MENU DE MODELOS (Dropdown) ═══ */
+[data-theme="halloween"] [class*="Select"],
+[data-theme="halloween"] [class*="select"],
+[data-theme="halloween"] [role="combobox"],
+[data-theme="halloween"] [class*="Combobox"] {
+  background: linear-gradient(135deg, #24103C 0%, #1B0B2D 100%) !important;
+  border: 2px solid #8B00FF !important;
+  color: #F7F2FF !important;
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 4px 20px rgba(138, 0, 255, 0.3),
+    inset 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+  min-width: 200px !important;
+  width: 100% !important;
+}
+
+[data-theme="halloween"] [class*="Select"]:hover,
+[data-theme="halloween"] [class*="select"]:hover,
+[data-theme="halloween"] [role="combobox"]:hover {
+  border-color: #FF6A00 !important;
+  box-shadow:
+    0 0 30px rgba(255, 106, 0, 0.5),
+    0 0 20px rgba(138, 0, 255, 0.3) !important;
+}
+
+/* Dropdown content de modelos */
+[data-theme="halloween"] [class*="SelectContent"],
+[data-theme="halloween"] [class*="select-content"],
+[data-theme="halloween"] [role="listbox"] {
+  background: linear-gradient(135deg, #1B0B2D 0%, #160826 100%) !important;
+  border: 2px solid #3A1B57 !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+  box-shadow:
+    0 8px 40px rgba(138, 0, 255, 0.5),
+    0 0 60px rgba(255, 106, 0, 0.3) !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  min-width: 250px !important;
+  width: 100% !important;
+}
+
+/* Items del dropdown de modelos */
+[data-theme="halloween"] [class*="SelectItem"],
+[data-theme="halloween"] [class*="select-item"],
+[data-theme="halloween"] [role="option"] {
+  background: transparent !important;
+  color: #F7F2FF !important;
+  padding: 12px 16px !important;
+  margin: 4px 0 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border-left: 3px solid transparent !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+[data-theme="halloween"] [class*="SelectItem"]:hover,
+[data-theme="halloween"] [class*="select-item"]:hover,
+[data-theme="halloween"] [role="option"]:hover,
+[data-theme="halloween"] [role="option"][data-highlighted] {
+  background: linear-gradient(90deg, rgba(138, 0, 255, 0.3), rgba(255, 106, 0, 0.2)) !important;
+  color: #FF6A00 !important;
+  border-left: 3px solid #FF6A00 !important;
+  box-shadow:
+    0 0 20px rgba(255, 106, 0, 0.4),
+    inset 0 0 20px rgba(138, 0, 255, 0.2) !important;
+  transform: translateX(5px) !important;
+}
+
+[data-theme="halloween"] [class*="SelectItem"][data-state="checked"],
+[data-theme="halloween"] [role="option"][aria-selected="true"] {
+  background: linear-gradient(90deg, rgba(255, 106, 0, 0.3), rgba(138, 0, 255, 0.2)) !important;
+  color: #FF6A00 !important;
+  border-left: 4px solid #FF6A00 !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 0 30px rgba(255, 106, 0, 0.5),
+    inset 0 0 30px rgba(138, 0, 255, 0.2) !important;
+}
+

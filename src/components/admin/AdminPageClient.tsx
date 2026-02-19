@@ -129,7 +129,7 @@ function createEmptyBannerForm(): BannerFormState {
 
 export default function AdminPageClient({ stats, currentUserId }: Props) {
   const router = useRouter()
-  const { refreshTheme } = useTheme()
+  const { currentTheme, setTheme, availableThemes } = useTheme()
   const [tab, setTab] = useState<AdminTab>('dashboard')
   const [users, setUsers] = useState<UserRow[]>([])
   const [providers, setProviders] = useState<AIProvider[]>([])
@@ -283,10 +283,10 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   const [testingTika, setTestingTika] = useState(false)
   const [tikaTestResult, setTikaTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  // Themes State
-  const [themes, setThemes] = useState<any[]>([])
-  const [themesLoading, setThemesLoading] = useState(false)
-  const [activeTheme, setActiveTheme] = useState<string>('liquid-glass')
+  // Themes State - Ya no se necesita, se usa el contexto local
+  // const [themes, setThemes] = useState<any[]>([])
+  // const [themesLoading, setThemesLoading] = useState(false)
+  // activeTheme ahora viene de currentTheme.slug del contexto
 
   // Notification Settings State
   const [notificationSettings, setNotificationSettings] = useState({
@@ -386,22 +386,9 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     }
   }
 
-  const loadThemes = async () => {
-    setThemesLoading(true)
-    try {
-      const res = await fetch('/api/admin/themes')
-      if (res.ok) {
-        const data = await res.json()
-        setThemes(data.themes || [])
-        const active = data.themes?.find((t: any) => t.is_active)
-        if (active) setActiveTheme(active.slug)
-      }
-    } catch (err) {
-      console.error('Error loading themes:', err)
-    } finally {
-      setThemesLoading(false)
-    }
-  }
+  // Ya no se necesita cargar temas desde Supabase
+  // Los temas ahora son locales y están en el contexto
+  // const loadThemes = async () => { ... }
 
   const loadNotificationSettings = async () => {
     setNotificationSettingsLoading(true)
@@ -571,11 +558,12 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
     }
   }, [tab])
 
-  useEffect(() => {
-    if (tab === 'themes' && themes.length === 0) {
-      void loadThemes()
-    }
-  }, [tab, themes.length])
+  // Ya no se necesita cargar temas desde Supabase
+  // useEffect(() => {
+  //   if (tab === 'themes' && themes.length === 0) {
+  //     void loadThemes()
+  //   }
+  // }, [tab, themes.length])
 
   useEffect(() => {
     if (tab === 'notification-sound' || tab === 'notification-message') {
@@ -1431,30 +1419,13 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
   }
 
   // === THEMES MANAGEMENT ===
-  const changeTheme = async (themeSlug: string) => {
-    setSaving(true)
+  const changeTheme = (themeSlug: string) => {
     try {
-      const theme = themes.find(t => t.slug === themeSlug)
-      if (!theme) return
-
-      const res = await fetch('/api/admin/themes', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: theme.id, is_active: true })
-      })
-
-      if (res.ok) {
-        setActiveTheme(themeSlug)
-        setThemes(themes.map(t => ({ ...t, is_active: t.slug === themeSlug })))
-        await refreshTheme() // Refresh theme in context
-        showStatus('Tema actualizado')
-      } else {
-        showStatus('Error al cambiar tema')
-      }
+      // Usar el contexto local para cambiar el tema
+      setTheme(themeSlug as any)
+      showStatus('Tema actualizado')
     } catch (err) {
       showStatus('Error al cambiar tema')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -4643,35 +4614,37 @@ export default function AdminPageClient({ stats, currentUserId }: Props) {
             Seleccionar Tema
           </h3>
 
-          {themesLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-zinc-400" size={24} />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Tema Activo</label>
+              <select
+                value={currentTheme.slug}
+                onChange={(e) => changeTheme(e.target.value)}
+                className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Object.values(availableThemes).map((theme) => (
+                  <option key={theme.id} value={theme.slug}>
+                    {theme.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">Tema Activo</label>
-                <select
-                  value={activeTheme}
-                  onChange={(e) => void changeTheme(e.target.value)}
-                  disabled={saving}
-                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {themes.map((theme) => (
-                    <option key={theme.id} value={theme.slug}>
-                      {theme.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Tema actual:</strong> {themes.find(t => t.slug === activeTheme)?.name || 'Liquid Glass'}
-                </p>
-              </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tema actual:</strong> {currentTheme.name}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                {currentTheme.description}
+              </p>
             </div>
-          )}
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-xs text-green-700">
+                ✅ Los temas ahora son locales y se guardan en tu navegador
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     )

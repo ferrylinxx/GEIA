@@ -1,35 +1,48 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
-interface ThemeConfig {
-  primary?: string
-  secondary?: string
-  background?: string
-  accent?: string
-  glass?: boolean
-  [key: string]: any
-}
+// Temas disponibles localmente
+const AVAILABLE_THEMES = {
+  'liquid-glass': {
+    id: 'liquid-glass',
+    name: 'Liquid Glass',
+    slug: 'liquid-glass',
+    description: 'Tema moderno con efectos de vidrio'
+  },
+  'halloween': {
+    id: 'halloween',
+    name: 'Halloween',
+    slug: 'halloween',
+    description: 'Tema oscuro épico con gradiente negro-naranja'
+  },
+  'navidad': {
+    id: 'navidad',
+    name: 'Navidad',
+    slug: 'navidad',
+    description: 'Tema festivo navideño'
+  }
+} as const
+
+type ThemeSlug = keyof typeof AVAILABLE_THEMES
 
 interface Theme {
   id: string
   name: string
   slug: string
-  config_json: ThemeConfig
-  is_active: boolean
+  description: string
 }
 
 interface ThemeContextType {
-  currentTheme: Theme | null
-  loading: boolean
-  refreshTheme: () => Promise<void>
+  currentTheme: Theme
+  setTheme: (slug: ThemeSlug) => void
+  availableThemes: typeof AVAILABLE_THEMES
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  currentTheme: null,
-  loading: true,
-  refreshTheme: async () => {},
+  currentTheme: AVAILABLE_THEMES['liquid-glass'],
+  setTheme: () => {},
+  availableThemes: AVAILABLE_THEMES,
 })
 
 export function useTheme() {
@@ -37,81 +50,49 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [currentTheme, setCurrentTheme] = useState<Theme | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [currentTheme, setCurrentTheme] = useState<Theme>(AVAILABLE_THEMES['liquid-glass'])
 
-  const loadActiveTheme = async () => {
-    try {
-      console.log('[Theme] Loading active theme from Supabase...')
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('app_themes')
-        .select('*')
-        .eq('is_active', true)
-        .single()
-
-      if (error) {
-        console.error('[Theme] Error loading active theme:', error)
-        // Set default theme if none is active
-        const defaultTheme = {
-          id: 'default',
-          name: 'Liquid Glass',
-          slug: 'liquid-glass',
-          config_json: {
-            primary: '#3b82f6',
-            background: '#ffffff',
-            glass: true
-          },
-          is_active: true
-        }
-        console.log('[Theme] Using default theme:', defaultTheme)
-        setCurrentTheme(defaultTheme)
-      } else {
-        console.log('[Theme] Loaded theme from DB:', data)
-        setCurrentTheme(data)
-      }
-    } catch (err) {
-      console.error('[Theme] Failed to load theme:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const applyTheme = (theme: Theme | null) => {
-    if (!theme) return
-
-    const config = theme.config_json
-    const root = document.documentElement
-
-    // Apply CSS variables
-    if (config.primary) root.style.setProperty('--theme-primary', config.primary)
-    if (config.secondary) root.style.setProperty('--theme-secondary', config.secondary)
-    if (config.background) root.style.setProperty('--theme-background', config.background)
-    if (config.accent) root.style.setProperty('--theme-accent', config.accent)
-
-    // Apply theme class
-    root.setAttribute('data-theme', theme.slug)
-
-    console.log(`[Theme] Applied theme: ${theme.name}`, config)
-  }
-
+  // Cargar tema desde localStorage al iniciar
   useEffect(() => {
-    void loadActiveTheme()
+    if (typeof window === 'undefined') return
+
+    const savedTheme = localStorage.getItem('geia-theme') as ThemeSlug | null
+    if (savedTheme && AVAILABLE_THEMES[savedTheme]) {
+      setCurrentTheme(AVAILABLE_THEMES[savedTheme])
+      applyTheme(savedTheme)
+      console.log('[Theme] Loaded from localStorage:', savedTheme)
+    } else {
+      // Aplicar tema por defecto
+      applyTheme('liquid-glass')
+      console.log('[Theme] Using default theme: liquid-glass')
+    }
   }, [])
 
-  useEffect(() => {
-    if (currentTheme) {
-      applyTheme(currentTheme)
-    }
-  }, [currentTheme])
+  const applyTheme = (slug: ThemeSlug) => {
+    if (typeof window === 'undefined') return
 
-  const refreshTheme = async () => {
-    setLoading(true)
-    await loadActiveTheme()
+    const root = document.documentElement
+    root.setAttribute('data-theme', slug)
+    console.log(`[Theme] Applied theme: ${slug}`)
+  }
+
+  const setTheme = (slug: ThemeSlug) => {
+    if (!AVAILABLE_THEMES[slug]) {
+      console.error('[Theme] Invalid theme slug:', slug)
+      return
+    }
+
+    const theme = AVAILABLE_THEMES[slug]
+    setCurrentTheme(theme)
+    applyTheme(slug)
+
+    // Guardar en localStorage
+    localStorage.setItem('geia-theme', slug)
+    console.log('[Theme] Theme changed to:', slug)
   }
 
   return (
-    <ThemeContext.Provider value={{ currentTheme, loading, refreshTheme }}>
+    <ThemeContext.Provider value={{ currentTheme, setTheme, availableThemes: AVAILABLE_THEMES }}>
       {children}
     </ThemeContext.Provider>
   )
